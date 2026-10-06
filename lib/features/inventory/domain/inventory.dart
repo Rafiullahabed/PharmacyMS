@@ -85,6 +85,7 @@ abstract interface class InventoryRepository {
   Future<Product> product(String id);
   Future<Batch> batch(String id);
   Future<bool> hasStockHistory(String productId);
+  Future<void> deleteUnusedProduct(String id, {required String operationId});
   Future<List<Product>> similarProducts(String name, {String? excludingId});
   Future<void> archiveProduct(
     String id, {

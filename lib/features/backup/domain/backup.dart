@@ -3,7 +3,7 @@ import 'dart:typed_data';
 typedef BackupRow = Map<String, Object?>;
 typedef BackupTables = Map<String, List<BackupRow>>;
 const backupFormatVersion = 1;
-const backupAppVersion = '0.6.0+6';
+const backupAppVersion = '0.8.0+8';
 const maxBackupBytes = 64 * 1024 * 1024;
 const maxPayloadBytes = 63 * 1024 * 1024;
 const maxBackupRecords = 250000;

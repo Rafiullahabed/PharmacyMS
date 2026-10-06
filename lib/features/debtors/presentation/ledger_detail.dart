@@ -91,8 +91,9 @@ class _LedgerDetailState extends State<LedgerDetail> {
         dirty: false,
         saving: deletion.saving,
         child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Ledger entry'),
+          appBar: pageAppBar(
+            context,
+            title: 'Ledger entry',
             actions: [
               if (data != null && !data.customer.archived)
                 PopupMenuButton<String>(
@@ -231,53 +232,59 @@ class _CorrectionHistoryState extends State<CorrectionHistory> {
     routeTitle: 'Correction history',
     load: load,
     builder: (context, rows) => Scaffold(
-      appBar: AppBar(title: const Text('Correction history')),
+      appBar: pageAppBar(context, title: 'Correction history'),
       body: SafeArea(
-        child: ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: rows.length + 1,
-          itemBuilder: (context, i) {
-            if (i == rows.length) {
-              return rows.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.history,
-                      title: 'No corrections',
-                      message:
-                          'Edits and deletions retain the previous values here.',
-                    )
-                  : rows.length == pages * 50
-                  ? TextButton(
-                      onPressed: () => setState(() => pages++),
-                      child: const Text('Load more corrections'),
-                    )
-                  : const SizedBox(height: 16);
-            }
-            final audit = rows[i];
-            return Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      '${audit.action == 'edit' ? 'Edited' : 'Deleted'} · ${audit.meta.createdAt.toLocal()}',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    Text('Entry: ${audit.entryId.substring(0, 8)}'),
-                    ContentText(audit.reason),
-                    const SizedBox(height: 12),
-                    const Text('Before'),
-                    values(audit.previous),
-                    if (audit.next != null) ...[
+        child: PageWidth(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: rows.length + 1,
+            itemBuilder: (context, i) {
+              if (i == rows.length) {
+                return rows.isEmpty
+                    ? const EmptyState(
+                        icon: Icons.history,
+                        title: 'No corrections',
+                        message:
+                            'Edits and deletions retain the previous values here.',
+                      )
+                    : rows.length == pages * 50
+                    ? TextButton(
+                        onPressed: () => setState(() => pages++),
+                        child: const Text('Load more corrections'),
+                      )
+                    : const SizedBox(height: 16);
+              }
+              final audit = rows[i];
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        audit.action == 'edit' ? 'Edited' : 'Deleted',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(
+                        localEventLabel(audit.meta.createdAt),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Text('Entry: ${audit.entryId.substring(0, 8)}'),
+                      ContentText(audit.reason),
                       const SizedBox(height: 12),
-                      const Text('After'),
-                      values(audit.next!),
+                      const Text('Before'),
+                      values(audit.previous),
+                      if (audit.next != null) ...[
+                        const SizedBox(height: 12),
+                        const Text('After'),
+                        values(audit.next!),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     ),

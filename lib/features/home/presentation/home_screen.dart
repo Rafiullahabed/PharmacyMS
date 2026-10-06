@@ -69,18 +69,25 @@ class HomeScreen extends StatelessWidget {
                     const Text('Recorded profit'),
                     MoneyText(summary.todayRecord!.profit),
                   ],
-                  TextButton(
-                    onPressed: () => onNavigate(2),
-                    child: const Text('View daily records'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: () => recordDay(context, daily),
-                    icon: const Icon(Icons.edit_calendar_outlined),
-                    label: Text(
-                      summary.todayRecord == null
-                          ? 'Record today'
-                          : "Edit today's record",
-                    ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: () => recordDay(context, daily),
+                        icon: const Icon(Icons.edit_calendar_outlined),
+                        label: Text(
+                          summary.todayRecord == null
+                              ? 'Record today'
+                              : "Edit today's record",
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => onNavigate(2),
+                        child: const Text('View daily records'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -102,14 +109,22 @@ class HomeScreen extends StatelessWidget {
                       summary.outstanding,
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
-                  TextButton(
-                    onPressed: () => openOutstandingCustomers(context, debt),
-                    child: const Text('View outstanding customers'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => addCustomer(context, debt),
-                    icon: const Icon(Icons.person_add_alt),
-                    label: const Text('Add customer'),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () =>
+                            openOutstandingCustomers(context, debt),
+                        child: const Text('View outstanding customers'),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => addCustomer(context, debt),
+                        icon: const Icon(Icons.person_add_alt),
+                        label: const Text('Add customer'),
+                      ),
+                    ],
                   ),
                 ],
               ),

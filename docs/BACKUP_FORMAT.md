@@ -60,6 +60,8 @@ Counts and lengths are bounded JSON integers. The manifest's ZIP CRC also protec
 
 No operational rows are filtered out because they are archived, inactive, empty or deleted-but-retained in history. Settings use the existing versioned key/value repository; no preference whitelist silently drops future keys.
 
+The optional `appearance.display_size` preference (version 1) stores `small`, `medium`, or `large`. Absent or unrecognized values use Medium. Restore refreshes the app's appearance controller. Unused-item deletion receipts use `inventory_operations.kind = delete_product`; the deleted UUID remains in its retry receipt, without resurrecting the product. Neither addition changes the schema or backup format version.
+
 ## Consistency, validation and replacement
 
 1. Export validates and reads every table in one database transaction. Encoding and hashing run in workers that receive plain data. The completed private file is flushed before preparation metadata is recorded. No live database/WAL copying occurs.

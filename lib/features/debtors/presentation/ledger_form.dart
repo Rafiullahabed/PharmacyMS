@@ -310,8 +310,7 @@ class _LedgerFormState extends State<LedgerForm> {
       if (previewing)
         const Text('Checking chronological balances…')
       else if (preview != null)
-        Semantics(
-          liveRegion: true,
+        PreviewPanel(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

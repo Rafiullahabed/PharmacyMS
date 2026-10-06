@@ -126,8 +126,9 @@ class _DailyRecordDetailState extends State<DailyRecordDetail> {
         dirty: false,
         saving: deletion.saving,
         child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Daily record'),
+          appBar: pageAppBar(
+            context,
+            title: 'Daily record',
             actions: [
               if (record != null)
                 PopupMenuButton<String>(

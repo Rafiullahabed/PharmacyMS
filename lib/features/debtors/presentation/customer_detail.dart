@@ -70,8 +70,9 @@ class _CustomerDetailState extends State<CustomerDetail> {
         dirty: false,
         saving: archive.saving,
         child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Customer'),
+          appBar: pageAppBar(
+            context,
+            title: 'Customer',
             actions: [
               PopupMenuButton<String>(
                 tooltip: 'Customer actions',
@@ -152,6 +153,7 @@ class _CustomerDetailState extends State<CustomerDetail> {
                             icon: const Icon(Icons.edit_outlined),
                             label: const Text('Edit customer'),
                           ),
+                          const SizedBox(height: 12),
                           if (!data.customer.archived)
                             Wrap(
                               spacing: 8,
@@ -246,29 +248,22 @@ class _CustomerDetailState extends State<CustomerDetail> {
                     return Card(
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(16),
-                        leading: Icon(
-                          entry.kind == LedgerKind.debt
-                              ? Icons.add_circle_outline
-                              : Icons.payments_outlined,
-                        ),
+                        leading: MediaQuery.textScalerOf(context).scale(16) > 24
+                            ? null
+                            : Icon(
+                                entry.kind == LedgerKind.debt
+                                    ? Icons.add_circle_outline
+                                    : Icons.payments_outlined,
+                              ),
                         title: Text(
                           '${entry.kind.label}\n${entry.kind == LedgerKind.debt ? '+' : '−'} ${entry.amount.formatted}',
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
-                              '${entry.date.label} · Sequence ${entry.sequence}',
-                            ),
+                            Text(entry.date.label),
                             if (entry.description.isNotEmpty)
-                              Text(
-                                entry.description,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                textDirection: contentDirection(
-                                  entry.description,
-                                ),
-                              ),
+                              ContentText(entry.description, maxLines: 3),
                             Text('Balance after: ${line.balance.formatted}'),
                           ],
                         ),

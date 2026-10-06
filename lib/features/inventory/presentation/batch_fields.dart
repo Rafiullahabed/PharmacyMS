@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/domain/dates.dart';
 import '../../../core/presentation/form_fields.dart';
+import '../../../core/presentation/business_date_input.dart';
 import '../../../core/domain/validation.dart';
 import '../domain/inventory.dart';
 import 'date_spec_field.dart';
@@ -77,7 +78,11 @@ class BatchFieldsState extends State<BatchFields> {
         helper: 'Leave empty to create a readable batch label.',
       ),
       const SizedBox(height: 16),
-      BusinessDateField(controller: received, label: 'Received date'),
+      BusinessDateInput(
+        controller: received,
+        label: 'Received date',
+        today: widget.today,
+      ),
       const SizedBox(height: 24),
       DateSpecField(
         key: production,

@@ -48,6 +48,35 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool showEmpty = false, showArchived = false;
   final save = SaveController();
+  final deletion = SaveController();
+  bool confirmingDelete = false;
+  Future<void> delete(Product product) async {
+    if (deletion.saving || confirmingDelete || save.saving) return;
+    confirmingDelete = true;
+    final confirmed = await confirmAction(
+      context,
+      title: 'Delete item?',
+      message:
+          'Permanently delete ${product.name}? Only an empty item without stock history can be deleted. This cannot be undone.',
+      action: 'Delete item',
+      destructive: true,
+    );
+    confirmingDelete = false;
+    if (!confirmed || !mounted) return;
+    deletion.newAttempt();
+    final done = await deletion.run((id) async {
+      await (await widget.controller.repository).deleteUnusedProduct(
+        product.meta.id,
+        operationId: id,
+      );
+      return true;
+    });
+    if (done == true) {
+      if (mounted) Navigator.pop(context);
+      widget.controller.changed();
+    }
+  }
+
   Future<void> archive(Product product) async {
     if (save.saving) return;
     if (!await confirmAction(
@@ -75,12 +104,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void dispose() {
     save.dispose();
+    deletion.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Item details')),
+    appBar: pageAppBar(context, title: 'Item details'),
     body: SafeArea(
       child: InventoryData(
         controller: widget.controller,
@@ -104,10 +134,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             unit: unit,
             item: InventoryItem.fromBatches(p, unit, batches, today),
             recent: await repo.productMovements(p.meta.id, limit: 5),
+            hasHistory: await repo.hasStockHistory(p.meta.id),
           );
         },
         builder: (context, data) => ListenableBuilder(
-          listenable: save,
+          listenable: Listenable.merge([save, deletion]),
           builder: (context, _) => PageContent(
             storageKey: 'product-${widget.productId}',
             children: [
@@ -154,7 +185,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   PopupMenuButton<String>(
                     tooltip: 'Item actions',
-                    enabled: !save.saving,
+                    enabled: !save.saving && !deletion.saving,
                     onSelected: (_) => archive(data.product),
                     itemBuilder: (_) => [
                       PopupMenuItem(
@@ -169,6 +200,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ],
                   ),
+                  if (!data.hasHistory && data.item.physical == 0)
+                    TextButton.icon(
+                      onPressed: deletion.saving || save.saving
+                          ? null
+                          : () => delete(data.product),
+                      icon: const Icon(Icons.delete_outline),
+                      label: Text(
+                        deletion.saving ? 'Deleting…' : 'Delete item',
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                    )
+                  else if (data.hasHistory &&
+                      data.item.physical == 0 &&
+                      !data.product.archived)
+                    OutlinedButton.icon(
+                      onPressed: save.saving
+                          ? null
+                          : () => archive(data.product),
+                      icon: const Icon(Icons.archive_outlined),
+                      label: const Text('Archive item'),
+                    ),
                 ],
               ),
               if (!data.product.archived && data.item.physical > 0)
@@ -176,6 +230,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   'Archiving is available after all physical stock is removed.',
                 ),
               ErrorNotice(save.error),
+              ErrorNotice(deletion.error),
+              if (deletion.error != null)
+                TextButton(
+                  onPressed: () => delete(data.product),
+                  child: const Text('Retry deletion'),
+                ),
+              if (data.hasHistory)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Stock history is kept permanently. Archive this item when empty instead of deleting it.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
               if (!data.product.archived) ...[
                 const SizedBox(height: 16),
                 Wrap(
@@ -305,7 +373,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                           remove: false,
                                           batchId: batch.meta.id,
                                         ),
-                                        child: Text('Add to ${batch.label}'),
+                                        child: Text(
+                                          'Add stock',
+                                          semanticsLabel:
+                                              'Add stock to batch ${batch.label}, ${batch.meta.id.substring(0, 8)}',
+                                        ),
                                       ),
                                       TextButton(
                                         onPressed: batch.quantity == 0
@@ -318,7 +390,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                 batchId: batch.meta.id,
                                               ),
                                         child: Text(
-                                          'Remove from ${batch.label}',
+                                          'Remove stock',
+                                          semanticsLabel:
+                                              'Remove stock from batch ${batch.label}, ${batch.meta.id.substring(0, 8)}',
                                         ),
                                       ),
                                     ],
@@ -414,7 +488,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Batch details')),
+    appBar: pageAppBar(context, title: 'Batch details'),
     body: SafeArea(
       child: InventoryData(
         controller: widget.controller,

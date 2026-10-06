@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/domain/validation.dart';
 import '../../../core/presentation/form_fields.dart';
 import '../../../core/presentation/workflow.dart';
+import '../../../core/presentation/components.dart';
 import '../../settings/presentation/units_screen.dart';
 import '../application/inventory_controller.dart';
 import '../domain/inventory.dart';
@@ -163,9 +164,10 @@ class _ProductFormState extends State<ProductForm> {
         ErrorNotice(loadError),
         TextButton(onPressed: load, child: const Text('Retry units')),
       ] else if (!loaded)
-        const LinearProgressIndicator()
+        const LoadingState(label: 'Loading counting units')
       else
         DropdownButtonFormField<String>(
+          itemHeight: null,
           key: ValueKey(
             '$unitId-${units.map((u) => '${u.meta.id}${u.name}${u.inactive}').join()}',
           ),
@@ -181,7 +183,9 @@ class _ProductFormState extends State<ProductForm> {
                 value: u.meta.id,
                 child: Text(
                   '${u.name}${u.inactive ? ' (inactive)' : ''}',
-                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
               ),
           ],
@@ -233,7 +237,8 @@ class _ProductFormState extends State<ProductForm> {
         label: 'Minimum stock',
         forceLtr: true,
         keyboardType: TextInputType.number,
-        helper: 'Warn when usable stock is below this amount.',
+        helper:
+            'Warn when usable stock is below this amount. Zero turns off low-stock warnings.',
         validator: (v) => validationMessage(() => wholeQuantity(v ?? '')),
       ),
       const SizedBox(height: 16),

@@ -53,6 +53,8 @@ class _EmptyRepository implements InventoryRepository {
 
 class _EmptySettings implements SettingsRepository {
   @override
+  Future<AppPreference?> preference(String key) async => null;
+  @override
   Future<List<StockUnit>> units() async => [];
   @override
   Future<Map<String, int>> unitUsage() async => {};

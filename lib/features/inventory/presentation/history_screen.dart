@@ -24,7 +24,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   int pages = 1;
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Stock history')),
+    appBar: pageAppBar(context, title: 'Stock history'),
     body: SafeArea(
       child: InventoryData(
         key: ValueKey(pages),
@@ -48,27 +48,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
             movements: movements,
           );
         },
-        builder: (context, data) => ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: data.movements.length + 1,
-          itemBuilder: (context, index) {
-            if (index == data.movements.length) {
-              return data.movements.isEmpty
-                  ? const Text('No stock movements yet.')
-                  : data.movements.length == pages * 50
-                  ? TextButton(
-                      onPressed: () => setState(() => pages++),
-                      child: const Text('Load older movements'),
-                    )
-                  : const SizedBox(height: 16);
-            }
-            final m = data.movements[index];
-            return MovementTile(
-              movement: m,
-              batchLabel: data.batches[m.batchId] ?? m.batchId,
-              unit: widget.unit,
-            );
-          },
+        builder: (context, data) => PageWidth(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: data.movements.length + 1,
+            itemBuilder: (context, index) {
+              if (index == data.movements.length) {
+                return data.movements.isEmpty
+                    ? const Text('No stock movements yet.')
+                    : data.movements.length == pages * 50
+                    ? TextButton(
+                        onPressed: () => setState(() => pages++),
+                        child: const Text('Load older movements'),
+                      )
+                    : const SizedBox(height: 16);
+              }
+              final m = data.movements[index];
+              return MovementTile(
+                movement: m,
+                batchLabel: data.batches[m.batchId] ?? m.batchId,
+                unit: widget.unit,
+              );
+            },
+          ),
         ),
       ),
     ),

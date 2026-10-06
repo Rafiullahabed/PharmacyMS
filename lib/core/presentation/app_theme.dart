@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 abstract final class AppColors {
   static const primary = Color(0xFF0F766E);
-  static const canvas = Color(0xFFF6F8FA);
+  static const canvas = Color(0xFFF2F6F7);
   static const surface = Colors.white;
   static const text = Color(0xFF172B3A);
   static const secondary = Color(0xFF526474);
@@ -66,20 +66,29 @@ ThemeData appTheme() {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
+      titleTextStyle: TextStyle(
+        fontFamily: 'Vazirmatn',
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: AppColors.text,
+      ),
     ),
     cardTheme: CardThemeData(
-      elevation: 0,
+      elevation: 2,
+      shadowColor: const Color(0x18172B3A),
+      surfaceTintColor: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
       color: Colors.white,
-      margin: EdgeInsets.zero,
+      margin: const EdgeInsets.symmetric(vertical: 4),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: AppColors.border),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.all(16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       errorMaxLines: 4,
       helperMaxLines: 4,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -91,17 +100,45 @@ ThemeData appTheme() {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         minimumSize: const Size(48, 48),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+      style: TextButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     ),
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+    ),
+    listTileTheme: const ListTileThemeData(
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      minVerticalPadding: 12,
+      iconColor: AppColors.secondary,
+    ),
+    dividerTheme: const DividerThemeData(color: AppColors.border, space: 24),
+    chipTheme: ChipThemeData(
+      backgroundColor: Colors.white,
+      selectedColor: const Color(0xFFDCEFEA),
+      side: const BorderSide(color: AppColors.border),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      labelStyle: const TextStyle(
+        fontFamily: 'Vazirmatn',
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppColors.text,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
     ),
     bottomSheetTheme: const BottomSheetThemeData(
       showDragHandle: true,
@@ -109,5 +146,70 @@ ThemeData appTheme() {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
     ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.surface,
+      titleTextStyle: const TextStyle(
+        fontFamily: 'Vazirmatn',
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: AppColors.text,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    ),
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: AppColors.text,
+      actionTextColor: Colors.white,
+      contentTextStyle: TextStyle(
+        fontFamily: 'Vazirmatn',
+        fontSize: 16,
+        color: Colors.white,
+      ),
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: MotionPageTransitions(
+          ZoomPageTransitionsBuilder(),
+        ),
+        TargetPlatform.iOS: MotionPageTransitions(
+          CupertinoPageTransitionsBuilder(),
+        ),
+        TargetPlatform.macOS: MotionPageTransitions(
+          CupertinoPageTransitionsBuilder(),
+        ),
+        TargetPlatform.windows: MotionPageTransitions(
+          ZoomPageTransitionsBuilder(),
+        ),
+        TargetPlatform.linux: MotionPageTransitions(
+          ZoomPageTransitionsBuilder(),
+        ),
+      },
+    ),
   );
+}
+
+bool reduceMotion(BuildContext context) =>
+    MediaQuery.disableAnimationsOf(context) ||
+    MediaQuery.accessibleNavigationOf(context);
+
+/// Keep native route gestures, while honoring the device's motion preference.
+class MotionPageTransitions extends PageTransitionsBuilder {
+  const MotionPageTransitions(this.delegate);
+  final PageTransitionsBuilder delegate;
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) => reduceMotion(context)
+      ? child
+      : delegate.buildTransitions(
+          route,
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+        );
 }

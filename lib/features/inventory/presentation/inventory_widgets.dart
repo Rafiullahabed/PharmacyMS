@@ -49,7 +49,7 @@ class _InventoryDataState<T> extends State<InventoryData<T>> {
     builder: (context, snapshot) {
       if (snapshot.hasError) {
         return Center(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -69,9 +69,7 @@ class _InventoryDataState<T> extends State<InventoryData<T>> {
         );
       }
       if (!snapshot.hasData) {
-        return const Center(
-          child: CircularProgressIndicator(semanticsLabel: 'Loading inventory'),
-        );
+        return const LoadingState(label: 'Loading inventory');
       }
       return widget.builder(context, snapshot.data as T);
     },
@@ -160,65 +158,81 @@ class BatchSummary extends StatelessWidget {
 }
 
 class InventoryQuantities extends StatelessWidget {
-  const InventoryQuantities({super.key, required this.item});
+  const InventoryQuantities({
+    super.key,
+    required this.item,
+    this.compact = false,
+  });
   final InventoryItem item;
+  final bool compact;
   @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    label: 'Stock for ${item.product.name}',
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '${item.usable} ${item.unit} usable',
-          style: Theme.of(context).textTheme.titleLarge,
+  Widget build(BuildContext context) {
+    final quantity = Text(
+      '${item.usable} ${item.unit} usable',
+      style: Theme.of(context).textTheme.titleLarge,
+    );
+    final statuses = <Widget>[
+      if (item.lowStock)
+        const StatusBadge(
+          label: 'Low stock',
+          icon: Icons.warning_amber_rounded,
+          color: AppColors.warning,
         ),
-        Text('${item.physical} ${item.unit} physical stock'),
-        if (item.expiredQuantity > 0)
-          Text(
-            '${item.expiredQuantity} ${item.unit} expired',
-            style: const TextStyle(color: AppColors.danger),
-          ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (item.lowStock)
-              const StatusBadge(
-                label: 'Low stock',
-                icon: Icons.warning_amber_rounded,
-                color: AppColors.warning,
-              ),
-            if (item.outOfStock)
-              const StatusBadge(
-                label: 'Out of stock',
-                icon: Icons.inventory_2_outlined,
-              ),
-            if (item.expiringBatches > 0)
-              StatusBadge(
-                label:
-                    '${item.expiringBatches} expiring ${item.expiringBatches == 1 ? 'batch' : 'batches'}',
-                icon: Icons.event_outlined,
-                color: AppColors.warning,
-              ),
-            if (item.expiresTodayBatches > 0)
-              StatusBadge(
-                label:
-                    'Expires today: ${item.expiresTodayBatches} ${item.expiresTodayBatches == 1 ? 'batch' : 'batches'}',
-                icon: Icons.today_outlined,
-                color: AppColors.warning,
-              ),
-            if (item.expiredBatches > 0)
-              StatusBadge(
-                label:
-                    '${item.expiredBatches} expired ${item.expiredBatches == 1 ? 'batch' : 'batches'}',
-                icon: Icons.event_busy_outlined,
-                color: AppColors.danger,
-              ),
+      if (item.outOfStock)
+        const StatusBadge(
+          label: 'Out of stock',
+          icon: Icons.inventory_2_outlined,
+        ),
+      if (item.expiringBatches > 0)
+        StatusBadge(
+          label:
+              '${item.expiringBatches} expiring ${item.expiringBatches == 1 ? 'batch' : 'batches'}',
+          icon: Icons.event_outlined,
+          color: AppColors.warning,
+        ),
+      if (item.expiresTodayBatches > 0)
+        StatusBadge(
+          label:
+              'Expires today: ${item.expiresTodayBatches} ${item.expiresTodayBatches == 1 ? 'batch' : 'batches'}',
+          icon: Icons.today_outlined,
+          color: AppColors.warning,
+        ),
+      if (item.expiredBatches > 0)
+        StatusBadge(
+          label:
+              '${item.expiredBatches} expired ${item.expiredBatches == 1 ? 'batch' : 'batches'}',
+          icon: Icons.event_busy_outlined,
+          color: AppColors.danger,
+        ),
+    ];
+    return Semantics(
+      container: true,
+      label: 'Stock for ${item.product.name}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (compact)
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [quantity, ...statuses],
+            )
+          else
+            quantity,
+          if (!compact || item.physical != item.usable)
+            Text('${item.physical} ${item.unit} physical stock'),
+          if (item.expiredQuantity > 0)
+            Text(
+              '${item.expiredQuantity} ${item.unit} expired',
+              style: const TextStyle(color: AppColors.danger),
+            ),
+          if (!compact && statuses.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8, children: statuses),
           ],
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }

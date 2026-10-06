@@ -69,14 +69,11 @@ class _NamesDialogState extends State<_NamesDialog> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextField(
+                SearchField(
                   controller: search,
                   onChanged: changed,
-                  decoration: const InputDecoration(
-                    labelText: 'Search item names',
-                    prefixIcon: Icon(Icons.search),
-                  ),
-                  textDirection: contentDirection(search.text),
+                  label: 'Search item names',
+                  clearLabel: 'Clear item search',
                 ),
                 const SizedBox(height: 12),
                 FutureBuilder<List<String>>(
@@ -98,7 +95,7 @@ class _NamesDialogState extends State<_NamesDialog> {
                       );
                     }
                     if (snapshot.connectionState != ConnectionState.done) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const LoadingState(label: 'Loading item names');
                     }
                     final names = snapshot.data!;
                     if (names.isEmpty) {

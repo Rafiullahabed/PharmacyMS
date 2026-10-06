@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/presentation/components.dart';
+import '../../../core/presentation/app_theme.dart';
 import '../application/inventory_controller.dart';
 import '../domain/inventory.dart';
 import 'inventory_widgets.dart';
@@ -19,7 +20,7 @@ class InventoryHome extends StatelessWidget {
     context,
     MaterialPageRoute(
       builder: (_) => Scaffold(
-        appBar: AppBar(title: Text(filter.label)),
+        appBar: pageAppBar(context, title: filter.label),
         body: SafeArea(
           child: InventoryScreen(controller: controller, initialFilter: filter),
         ),
@@ -44,35 +45,52 @@ class InventoryHome extends StatelessWidget {
                 '${data.overview.products} active products · ${data.overview.batches} active batches',
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final pair in [
-                    (InventoryFilter.lowStock, data.overview.lowStock),
-                    (InventoryFilter.outOfStock, data.overview.outOfStock),
-                    (InventoryFilter.expired, data.overview.expiredBatches),
-                    (
-                      InventoryFilter.expiresToday,
-                      data.overview.expiresTodayBatches,
+              if (data.overview.products > 0)
+                Card(
+                  elevation: 0,
+                  color: AppColors.canvas,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final pair in [
+                          (InventoryFilter.lowStock, data.overview.lowStock),
+                          (
+                            InventoryFilter.outOfStock,
+                            data.overview.outOfStock,
+                          ),
+                          (
+                            InventoryFilter.expired,
+                            data.overview.expiredBatches,
+                          ),
+                          (
+                            InventoryFilter.expiresToday,
+                            data.overview.expiresTodayBatches,
+                          ),
+                          (
+                            InventoryFilter.expiringSoon,
+                            data.overview.expiringBatches,
+                          ),
+                        ])
+                          _AlertCount(
+                            filter: pair.$1,
+                            count: pair.$2,
+                            onTap: () => open(context, pair.$1),
+                          ),
+                      ],
                     ),
-                    (
-                      InventoryFilter.expiringSoon,
-                      data.overview.expiringBatches,
-                    ),
-                  ])
-                    _AlertCount(
-                      filter: pair.$1,
-                      count: pair.$2,
-                      onTap: () => open(context, pair.$1),
-                    ),
-                ],
-              ),
+                  ),
+                ),
               const SizedBox(height: 12),
-              Text(
-                'Counts can overlap. Expiring soon includes expires today.',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              if (data.overview.products > 0)
+                Text(
+                  'Counts can overlap. Expiring soon includes expires today.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               if (!data.overview.hasAlerts)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
@@ -185,10 +203,25 @@ class _AlertCount extends StatelessWidget {
       button: true,
       onTap: onTap,
       excludeSemantics: true,
-      child: OutlinedButton.icon(
+      child: TextButton(
+        style: TextButton.styleFrom(
+          foregroundColor: count == 0
+              ? AppColors.secondary
+              : filter == InventoryFilter.expired ||
+                    filter == InventoryFilter.outOfStock
+              ? AppColors.danger
+              : AppColors.warning,
+        ),
         onPressed: onTap,
-        icon: Icon(inventoryFilterIcon(filter)),
-        label: Text(label),
+        child: Row(
+          children: [
+            Icon(inventoryFilterIcon(filter), size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(label)),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, size: 20),
+          ],
+        ),
       ),
     );
   }
@@ -214,7 +247,9 @@ class _AttentionRow extends StatelessWidget {
     excludeSemantics: true,
     child: ListTile(
       contentPadding: const EdgeInsets.symmetric(vertical: 8),
-      leading: Icon(icon),
+      leading: MediaQuery.textScalerOf(context).scale(16) > 24
+          ? null
+          : Icon(icon),
       title: ContentText(title),
       subtitle: Text(description),
       trailing: const Icon(Icons.chevron_right),

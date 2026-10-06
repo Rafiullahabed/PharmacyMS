@@ -43,10 +43,7 @@ class _BackupScreenState extends State<BackupScreen> {
         dirty: false,
         saving: c.busy,
         child: Scaffold(
-          appBar: AppBar(
-            toolbarHeight: MediaQuery.textScalerOf(context).scale(24) * 2 + 16,
-            title: const Text('Backup & Restore', maxLines: 2),
-          ),
+          appBar: pageAppBar(context, title: 'Backup & Restore'),
           body: SafeArea(
             child: PageContent(
               children: [
@@ -70,7 +67,7 @@ class _BackupScreenState extends State<BackupScreen> {
                       ] else if (c.last == null)
                         const Text('No backup has been prepared yet.')
                       else ...[
-                        Text(c.last!.createdUtc.toLocal().toString()),
+                        Text(localEventLabel(c.last!.createdUtc)),
                         Text(c.last!.filename),
                         Text(c.last!.outcome.label),
                       ],
@@ -82,9 +79,7 @@ class _BackupScreenState extends State<BackupScreen> {
                     liveRegion: true,
                     child: Column(
                       children: [
-                        const LinearProgressIndicator(),
-                        const SizedBox(height: 12),
-                        Text(c.stage ?? 'Working…'),
+                        LoadingState(label: c.stage ?? 'Working…'),
                         const SizedBox(height: 16),
                       ],
                     ),
@@ -155,7 +150,9 @@ class _BackupScreenState extends State<BackupScreen> {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   Text(preview.filename),
-                  Text('Created: ${preview.manifest.createdUtc.toLocal()}'),
+                  Text(
+                    'Created: ${localEventLabel(preview.manifest.createdUtc)}',
+                  ),
                   Text(
                     'Source timezone: ${preview.manifest.timezone} (UTC offset ${preview.manifest.offsetMinutes} minutes)',
                   ),
@@ -170,8 +167,11 @@ class _BackupScreenState extends State<BackupScreen> {
                   ))
                     Text('${_tableLabel(count.key)}: ${count.value}'),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Restoring this backup replaces the information currently in this app. It does not merge records.',
+                  const StatusBadge(
+                    icon: Icons.warning_amber_rounded,
+                    label:
+                        'Replaces all current data. Records will not be merged.',
+                    color: Color(0xFFB91C1C),
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(

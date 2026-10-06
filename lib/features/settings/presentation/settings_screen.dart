@@ -4,6 +4,7 @@ import '../../inventory/application/inventory_controller.dart';
 import 'units_screen.dart';
 import '../../backup/application/backup_controller.dart';
 import '../../backup/presentation/backup_screen.dart';
+import 'appearance_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.controller, this.backups});
@@ -11,19 +12,24 @@ class SettingsScreen extends StatelessWidget {
   final BackupController? backups;
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Settings')),
+    appBar: pageAppBar(context, title: 'Settings'),
     body: SafeArea(
       child: PageContent(
         children: [
+          AppearanceSettings(resolve: () => controller.settings),
           Section(
             title: 'Units',
+            icon: Icons.straighten_rounded,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text('Each item uses one counting unit.'),
                 const SizedBox(height: 12),
                 ListTile(
-                  contentPadding: EdgeInsets.zero,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   title: const Text('Manage units'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
@@ -38,8 +44,12 @@ class SettingsScreen extends StatelessWidget {
           ),
           Section(
             title: 'Backup & Restore',
+            icon: Icons.shield_outlined,
             child: ListTile(
-              contentPadding: EdgeInsets.zero,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 6,
+              ),
               title: const Text('Portable backup and restore'),
               subtitle: const Text(
                 'Keep a private copy or restore a previous backup.',
@@ -57,12 +67,13 @@ class SettingsScreen extends StatelessWidget {
           ),
           const Section(
             title: 'About',
+            icon: Icons.local_pharmacy_outlined,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text('Pharmacy Companion'),
                 SizedBox(height: 8),
-                Text('Phase 6 · Portable backup and restore'),
+                Text('Version 0.8.0 · Offline pharmacy notebook'),
                 SizedBox(height: 8),
                 Text(
                   'Inventory, manual daily sales/profit and customer debt work independently on this device. Portable backups include all records and settings.',
@@ -74,7 +85,7 @@ class SettingsScreen extends StatelessWidget {
             onPressed: () => showLicensePage(
               context: context,
               applicationName: 'Pharmacy Companion',
-              applicationVersion: '0.6.0',
+              applicationVersion: '0.8.0',
             ),
             child: const Text('Open-source licenses'),
           ),

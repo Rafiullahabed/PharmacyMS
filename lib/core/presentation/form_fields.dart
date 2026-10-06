@@ -13,6 +13,25 @@ String? validationMessage(void Function() validate) {
   }
 }
 
+TextDirection inputDirection(
+  TextEditingValue value, {
+  required bool multiline,
+}) {
+  if (multiline && value.selection.isValid) {
+    final offset = value.selection.extentOffset.clamp(0, value.text.length);
+    final start = offset == 0
+        ? 0
+        : value.text.lastIndexOf('\n', offset - 1) + 1;
+    final end = value.text.indexOf('\n', offset);
+    final paragraph = value.text.substring(
+      start,
+      end < 0 ? value.text.length : end,
+    );
+    if (paragraph.trim().isNotEmpty) return contentDirection(paragraph);
+  }
+  return contentDirection(value.text);
+}
+
 /// Labels stay LTR; only editable content follows its first strong character.
 class AppTextField extends StatefulWidget {
   const AppTextField({
@@ -26,6 +45,9 @@ class AppTextField extends StatefulWidget {
     this.forceLtr = false,
     this.focusNode,
     this.hint,
+    this.autofocus = false,
+    this.onChanged,
+    this.shortLabel,
   });
   final TextEditingController controller;
   final String label;
@@ -36,6 +58,9 @@ class AppTextField extends StatefulWidget {
   final bool forceLtr;
   final FocusNode? focusNode;
   final String? hint;
+  final bool autofocus;
+  final ValueChanged<String>? onChanged;
+  final String? shortLabel;
   @override
   State<AppTextField> createState() => _AppTextFieldState();
 }
@@ -48,31 +73,60 @@ class _AppTextFieldState extends State<AppTextField> {
         builder: (context, value, _) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(widget.label, textDirection: TextDirection.ltr),
+            ExcludeSemantics(
+              child: Text(
+                widget.shortLabel ?? widget.label,
+                textDirection: TextDirection.ltr,
+              ),
+            ),
             const SizedBox(height: 8),
             Semantics(
               label: widget.label,
               child: TextFormField(
                 controller: widget.controller,
                 focusNode: widget.focusNode,
+                autofocus: widget.autofocus,
+                onChanged: widget.onChanged,
+                textInputAction: widget.maxLines > 1
+                    ? TextInputAction.newline
+                    : TextInputAction.next,
                 validator: widget.validator,
                 maxLines: widget.maxLines,
                 keyboardType: widget.keyboardType,
                 textDirection: widget.forceLtr
                     ? TextDirection.ltr
-                    : contentDirection(value.text),
+                    : inputDirection(value, multiline: widget.maxLines > 1),
                 textAlign:
                     !widget.forceLtr &&
-                        contentDirection(value.text) == TextDirection.rtl
+                        inputDirection(value, multiline: widget.maxLines > 1) ==
+                            TextDirection.rtl
                     ? TextAlign.right
                     : TextAlign.left,
-                decoration: InputDecoration(
-                  helperText: widget.helper,
-                  hintText: widget.hint,
+                decoration: InputDecoration(hintText: widget.hint),
+                errorBuilder: (context, error) => Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    error,
+                    textDirection: TextDirection.ltr,
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
                 ),
                 autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
             ),
+            if (widget.helper != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  widget.helper!,
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
           ],
         ),
       );

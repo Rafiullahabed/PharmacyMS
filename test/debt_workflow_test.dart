@@ -260,6 +260,13 @@ void main() {
 
   Future<void> tab(WidgetTester tester) async {
     await tap(tester, find.byIcon(Icons.people_outline).last);
+    if (tester.platformDispatcher.textScaleFactor > 1.5) {
+      await tester.drag(
+        find.byType(NestedScrollView).last,
+        const Offset(0, -300),
+      );
+      await frames(tester);
+    }
     await until(
       tester,
       () =>
@@ -428,6 +435,11 @@ void main() {
       await tester.pageBack();
       await frames(tester);
       expect(find.text('No matching customers'), findsOneWidget);
+      await tester.drag(
+        find.byType(NestedScrollView).last,
+        const Offset(0, 600),
+      );
+      await frames(tester);
       await tap(tester, find.widgetWithText(FilterChip, 'Archived'));
       await tap(tester, find.widgetWithText(ListTile, 'احمد'));
       await tap(tester, find.byTooltip('Customer actions'));
@@ -469,7 +481,7 @@ void main() {
       expect(find.text('۰۰۷۰ ۱۲۳'), findsOneWidget);
       await tester.pageBack();
       await frames(tester);
-      final search = find.widgetWithText(TextField, 'Search name or phone');
+      final search = find.byType(TextField);
       await tester.enterText(search, '0070123');
       await frames(tester);
       expect(find.widgetWithText(ListTile, 'لیلا'), findsOneWidget);
@@ -564,7 +576,8 @@ void main() {
       expect(find.text('Deleted after confirmation'), findsOneWidget);
       await tap(tester, find.text('Amount corrected'));
       expect(find.text('Original فارسی'), findsOneWidget);
-      expect(find.text('تصحیح Amoxicillin\nدو بسته'), findsOneWidget);
+      expect(find.text('تصحیح Amoxicillin'), findsOneWidget);
+      expect(find.text('دو بسته'), findsOneWidget);
       expect(await tester.runAsync(() => f.count('correction_audits')), 2);
       expect(tester.takeException(), isNull);
     },
@@ -761,7 +774,18 @@ void main() {
         expect(tester.getRect(action('Add debt')).bottom, lessThan(388));
         await screenshot(tester, 'narrow-ledger-form');
         await tap(tester, find.text('Insert item name'));
-        await tester.ensureVisible(find.text('Amoxicillin').last);
+        await tester.scrollUntilVisible(
+          find.text('Amoxicillin'),
+          150,
+          scrollable: find
+              .descendant(
+                of: find.byType(Dialog),
+                matching: find.byWidgetPredicate(
+                  (w) => w is Scrollable && w.restorationId != 'editable',
+                ),
+              )
+              .first,
+        );
         await frames(tester);
         await screenshot(tester, 'narrow-suggestions');
         await tap(tester, find.widgetWithText(ListTile, 'Amoxicillin'));

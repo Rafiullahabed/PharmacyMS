@@ -1,6 +1,6 @@
 # Dependencies and offline assets
 
-Resolved with Flutter 3.41.5 / Dart 3.11.3; Phase 6 additions on 2026-10-06. Exact direct/transitive versions and hashes are in `pubspec.lock`. Dependencies were selected against the installed SDK; newer incompatible versions were not forced.
+Resolved with Flutter 3.41.5 / Dart 3.11.3; final integration additions on 2026-10-06. Exact direct/transitive versions and hashes are in `pubspec.lock`. Dependencies were selected against the installed SDK; newer incompatible versions were not forced.
 
 | Direct dependency | Locked version | License | Purpose |
 |---|---|---|---|
@@ -14,6 +14,7 @@ Resolved with Flutter 3.41.5 / Dart 3.11.3; Phase 6 additions on 2026-10-06. Exa
 | file_picker | 10.3.10 | MIT | Scoped native file selection and destination saving |
 | share_plus | 12.0.1 | BSD-3-Clause | Native share sheet and completion status |
 | flutter_test | SDK | BSD-3-Clause | Domain, repository and widget tests |
+| integration_test | SDK | BSD-3-Clause | Real Android/iOS sqflite and UI integration tests (development only) |
 | flutter_lints | 6.0.0 | BSD-3-Clause | Static analysis |
 | sqflite_common_ffi | 2.4.0+3 | BSD-2-Clause | Real SQLite host tests (development only) |
 
@@ -30,3 +31,5 @@ Backup references: [crypto](https://pub.dev/packages/crypto), [file_picker 10.3.
 Android retains Flutter-managed SDK values, Gradle 8.14, Kotlin 2.2.20 and Java 17 source compatibility. AGP was updated from 8.11.1 to **8.12.1**, the minimum required by the selected share plugin. Flutter builds here use Android Studio's Java 21 runtime; the unrelated system Java 26 is not compatible with this Gradle setup. The existing iOS project targets iOS 13.0. On macOS, Flutter resolves iOS plugin integration; Xcode/signing and actual iOS behavior remain to be verified. Existing example application identifiers and debug signing are development defaults; release identity/signing is not configured. Native picker access is scoped; the app adds no broad storage, photo-library, notification or network permission for backups.
 
 Python 3 on PATH is needed only by the host backup interoperability test, which independently reads and rewrites the ZIP/JSON format. It is not an app dependency.
+
+Phase 8 added only the Flutter SDK `integration_test` development dependency and its locked test tooling dependencies. See [Flutter's integration-test instructions](https://docs.flutter.dev/testing/integration-tests). On this host, external Gradle downloads were unavailable: the installed Gradle 8.14 distribution was copied to the workspace cache, and a local `build/phase6-gradle-home/init.d/phase8-integration.gradle` forces the integration-test plugin's AGP classpath to the app's already installed **8.12.1** instead of its **8.11.0** request. This is a build-host cache workaround, not a patch to the SDK or app's runtime behavior. A normally networked development setup can resolve the plugin's build dependencies with the documented Flutter commands.

@@ -1,10 +1,14 @@
-# Pharmacy Companion — Phase 6
+# Pharmacy Companion — Phase 8 delivery
 
 An offline Flutter app for Android and iOS. The English interface supports Persian/Dari content. Inventory, manually recorded daily sales/profit, and customer debt remain independent.
 
-Phase 6 adds portable backup and restore to the inventory, manual daily records and customer debt notebook. Home shows actual inventory alerts, daily figures and outstanding debt. Only six suggested counting units are seeded; operational data starts empty.
+Version **0.8.0+8** includes inventory, calendar-aware alerts, manual daily records/reports, the customer debt notebook and portable backup/restore. Layouts support narrow screens and enlarged text, with offline Persian-capable fonts and preserved tab state. Home shows actual inventory alerts, daily figures and outstanding debt. Only six suggested counting units are seeded; operational data starts empty. The [final requirement and acceptance audit](docs/FINAL_VERIFICATION.md) maps every requirement and workflow to code and verification evidence.
+
+Settings > Appearance offers Small, Medium (default), and Large (the previous text size). Your choice is stored on this device and included in backups; system accessibility scaling still applies. Cards use soft shadows, consistent rounded surfaces and spacing, with compact button padding and 48px touch targets.
 
 Start in Inventory > Add item. Choose or add a counting unit and optionally enter initial stock. From item detail, use Add new batch for a delivery, or Add/Remove stock for an existing batch. When several batches are eligible, choose one explicitly. Settings > Manage units handles rename, deactivate/reactivate and deletion of unused units.
+
+Inventory list cards now have **− / +** shortcuts for exactly one unit. A single eligible batch updates immediately; multiple batches open an explicit chooser. Undo is available after saving. An item with no batch opens the new-batch form for its first delivery. Item detail retains the full quantity-entry forms. **Delete item** is available there for unused, empty items and requires confirmation. Stock history prevents permanent deletion; empty used items can be archived instead.
 
 Home opens low-stock/out-of-stock product lists or expiring-soon/expired/expires-today batch lists. Needs attention links directly to the affected item or batch. Edit an item to set its minimum usable quantity and inclusive expiry-warning window. Minimum zero disables only low-stock warnings. Today's expiry stays usable until the next local day; month-only expiry uses the original calendar's month end. Alerts are inside the app only.
 
@@ -20,14 +24,15 @@ Use Flutter 3.41.5 stable / Dart 3.11.3 or a compatible SDK. Python 3 on PATH is
 
 ```sh
 flutter pub get
-dart format --output=none --set-exit-if-changed lib test
+dart format --output=none --set-exit-if-changed lib test integration_test
 flutter analyze
 flutter test
+flutter test integration_test/native_app_test.dart -d <android-or-ios-device-id>
 flutter run -d <android-or-ios-device-id>
 flutter build apk --debug
 ```
 
-For iOS, use macOS with Xcode and its command-line tools configured, then `flutter build ios --simulator` or `flutter run` on an iOS simulator/device. Configure a development team for a physical iPhone. These Apple toolchain steps cannot be verified on this Windows host. Android SDK/licensing is available here. Existing example bundle IDs and debug signing are for development; publishing is not configured.
+For iOS, use macOS with Xcode and its command-line tools configured, then `flutter build ios --simulator --debug` and the integration command above on an iOS simulator. Configure a development team and unique bundle identifier for a physical iPhone. Exact setup and pending checks are in the [final audit](docs/FINAL_VERIFICATION.md#reproduction-and-remaining-platform-acceptance). These Apple toolchain steps cannot be verified on this Windows host. Android SDK/licensing is available here. Use Java 21 with this Gradle 8.14 project; the host's unrelated Java 26 is incompatible. Existing example bundle IDs and debug signing are for development; publishing is not configured.
 
 ## Architecture and scope
 
@@ -35,6 +40,7 @@ For iOS, use macOS with Xcode and its command-line tools configured, then `flutt
 - `lib/core/`: schema/migrations, exact value types, validation, theme and reusable forms.
 - `lib/app/`: dependency composition and ChangeNotifier application state. Inventory, daily-record and debt controllers refresh their views and Home after commits. Resume and day changes refresh time-sensitive data (checked every 30 seconds while open). SQLite opens before data is displayed; failures show a working retry.
 - `test/`: domain boundaries, real on-disk persistence/migrations, and widget checks. Fixtures never seed the app.
+- `integration_test/`: real native sqflite, independent-module persistence/restore and Flutter form journeys. Tests use unique private databases, separate from the normal user database.
 
 Money is integer AFN minor units; event timestamps are UTC; business dates are civil dates. Batch dates retain their original calendar, precision and source components. No POS, invoices, accounts, server, automatic batch selection, automatic profit calculation, or synchronization is implemented.
 
@@ -42,10 +48,12 @@ The database is versioned and protected by foreign keys, checks, indexes and tra
 
 ## Status
 
-All **152 tests pass** (120 retained plus 25 backup persistence/format and 7 backup UI tests); formatting and analysis are clean. Checks include exact round trips, malformed files, invariant rejection, repeated replacement, migration, rollback/reopening, cancellation and Home refresh. The Android debug APK builds for ARM64/x86_64. Actual Android 16 emulator checks passed offline native save/share cancellation, picker/preview/confirmed restore, app restart and corrupt-file rejection; the re-export matches the source's 14 tables. iOS and physical-device verification remain pending.
+All **174 tests pass**; formatting and static analysis are clean, and the Android debug APK builds for ARM64/x86_64. The Phase 7 review covers 22 screen entries at normal and 200% text, plus keyboard, chart, mixed-language and recovery cases. Actual Android 16 emulator review exercised native restore, numeric keyboard, stock adjustment/Undo, Back behavior and enlarged-text layouts. The subsequent appearance, one-unit shortcut and deletion changes were checked with host screenshots and real SQLite tests; they have not been rerun on a native device. iOS, physical devices, spoken screen readers and native Persian IME acceptance remain pending.
 
-`flutter test test/backup_workflow_test.dart --dart-define=PHASE6_SCREENSHOTS=true` saves host-rendered 320px/200% text images in `build/phase6-review/`. These widget tests mock native dialogs; separate Python ZIP compatibility and Android emulator execution are recorded distinctly in the status log. No actual iPhone-to-Android transfer is claimed.
+`flutter test test/ui_refinement_test.dart --dart-define=PHASE7_SCREENSHOTS=true` produces the development-only gallery in `build/phase7-review/`. See [UI/UX review and reproduction](docs/UI_UX_REVIEW.md) for reviewed screens, fixture isolation, native/host distinctions and known editing limits. No fixture data ships with the app.
 
 See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for exact specification coverage, verification results and limitations, and [dependencies](docs/DEPENDENCIES.md) for locked versions/licenses. Both original specifications in `explainations/` remain the source of truth.
 
-Next work: native platform acceptance, accessibility/device failure testing and large-dataset benchmarks. No synchronization or additional product module is introduced.
+The representative larger-data test is `flutter test test/large_dataset_test.dart`; timings are written to `build/phase8-performance.json`. It verifies 5,000 products, 20,000 batches and 50,000 history/ledger entries plus five years of daily records, including full backup restoration. Use `python tool/package_delivery.py` only after verifying the normal `lib/main.dart` debug build; it packages source and APK with SHA-256 hashes under `build/delivery/` and excludes build caches, local paths and signing keys.
+
+Assumptions: one user/device, AFN with two decimal places, integer stock in one unit per product, local Gregorian financial/debt business dates, no future actual entries, signed manual profit, no customer credit, zero physical stock/debt before archive, and replacement-only restoration. Batch calendar/precision remains authoritative. No synchronization or additional product module is introduced. Remaining iOS/physical-device and native accessibility acceptance is explicitly documented.

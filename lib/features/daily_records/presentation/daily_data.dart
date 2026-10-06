@@ -49,19 +49,13 @@ class _DailyDataState<T> extends State<DailyData<T>> {
     builder: (context, snapshot) {
       Widget status(Widget child) => widget.route
           ? Scaffold(
-              appBar: AppBar(title: const Text('Daily record')),
+              appBar: pageAppBar(context, title: 'Daily record'),
               body: SafeArea(child: child),
             )
           : child;
       if (snapshot.hasError) return status(AppErrorState(onRetry: reload));
       if (snapshot.connectionState != ConnectionState.done) {
-        return status(
-          const Center(
-            child: CircularProgressIndicator(
-              semanticsLabel: 'Loading daily records',
-            ),
-          ),
-        );
+        return status(const LoadingState(label: 'Loading daily records'));
       }
       return widget.builder(context, snapshot.data as T);
     },

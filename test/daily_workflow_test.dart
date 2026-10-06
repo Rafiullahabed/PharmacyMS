@@ -576,7 +576,7 @@ void main() {
         await tap(tester, find.text('Save record'));
         await until(
           tester,
-          () => find.text('Edit record').evaluate().isNotEmpty,
+          () => find.byType(DailyRecordDetail).evaluate().isNotEmpty,
         );
         await tester.pageBack();
         await frames(tester);

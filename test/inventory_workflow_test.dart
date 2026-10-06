@@ -5,6 +5,7 @@ import 'package:pharmacyms/core/domain/dates.dart';
 import 'package:pharmacyms/core/domain/validation.dart';
 import 'package:pharmacyms/core/presentation/app_theme.dart';
 import 'package:pharmacyms/core/presentation/form_fields.dart';
+import 'package:pharmacyms/core/presentation/components.dart';
 import 'package:pharmacyms/features/inventory/application/inventory_controller.dart';
 import 'package:pharmacyms/features/inventory/data/sqlite_inventory_repository.dart';
 import 'package:pharmacyms/features/inventory/domain/inventory.dart';
@@ -101,8 +102,13 @@ Future<void> enter(WidgetTester tester, String label, String value) async {
   await tester.pump();
 }
 
-Finder rawField(String label) => find.byWidgetPredicate(
-  (w) => w is TextField && w.decoration?.labelText == label,
+Finder rawField(String label) => find.descendant(
+  of: find.byWidgetPredicate(
+    (w) =>
+        (w is AppTextField && w.label == label) ||
+        (w is SearchField && w.label == label),
+  ),
+  matching: find.byType(TextField),
 );
 Future<void> select(WidgetTester tester, Finder dropdown, String option) async {
   await tester.ensureVisible(dropdown);

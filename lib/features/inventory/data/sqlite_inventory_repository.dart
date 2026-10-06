@@ -394,6 +394,43 @@ class SqliteInventoryRepository implements InventoryRepository {
   });
 
   @override
+  Future<void> deleteUnusedProduct(
+    String id, {
+    required String operationId,
+  }) => db.transaction((tx) async {
+    await inventoryOperation(
+      tx,
+      clock,
+      operationId,
+      'delete_product',
+      {'id': id},
+      () async {
+        await requireRow(tx, 'products', id);
+        if (await _hasHistory(tx, id)) {
+          throw const ValidationException(
+            'This item has stock history. Archive it when empty to keep that history.',
+          );
+        }
+        final stocked = await tx.query(
+          'batches',
+          columns: ['id'],
+          where: 'product_id=? AND quantity>0',
+          whereArgs: [id],
+          limit: 1,
+        );
+        if (stocked.isNotEmpty) {
+          throw const ValidationException(
+            'An item with physical stock cannot be deleted.',
+          );
+        }
+        await tx.delete('batches', where: 'product_id=?', whereArgs: [id]);
+        await tx.delete('products', where: 'id=?', whereArgs: [id]);
+        return id;
+      },
+    );
+  });
+
+  @override
   Future<void> archiveProduct(
     String id, {
     required bool archived,

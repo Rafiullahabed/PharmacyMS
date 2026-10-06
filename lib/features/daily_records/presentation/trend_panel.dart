@@ -103,29 +103,42 @@ class _TrendPanelState extends State<TrendPanel>
             label:
                 '${monthly ? 'Monthly' : 'Daily'} ${profit ? 'manually recorded profit' : 'sales'} chart. Exact values follow. Use previous and next value buttons, or the data list below.',
             child: LayoutBuilder(
-              builder: (context, constraints) => GestureDetector(
-                excludeFromSemantics: true,
-                onTapUp: (details) => setState(
-                  () => selected =
-                      ((details.localPosition.dx - 86) /
-                              math.max(1, constraints.maxWidth - 102) *
-                              math.max(1, points.length - 1))
-                          .round()
-                          .clamp(0, points.length - 1),
-                ),
-                child: CustomPaint(
-                  key: const ValueKey('daily-trend-plot'),
-                  size: Size(constraints.maxWidth, 240),
-                  painter: _TrendPainter(
-                    values: points
-                        .map((p) => p.value(profit)?.toDouble())
-                        .toList(),
-                    selected: selection,
-                    color: profit ? AppColors.danger : AppColors.primary,
-                    textScaler: MediaQuery.textScalerOf(context),
+              builder: (context, constraints) {
+                final left = math.min(
+                  constraints.maxWidth * .45,
+                  math.max(86.0, MediaQuery.textScalerOf(context).scale(60)),
+                );
+                return GestureDetector(
+                  excludeFromSemantics: true,
+                  onTapUp: (details) => setState(
+                    () => selected =
+                        ((details.localPosition.dx - left) /
+                                math.max(1, constraints.maxWidth - left - 16) *
+                                math.max(1, points.length - 1))
+                            .round()
+                            .clamp(0, points.length - 1),
                   ),
-                ),
-              ),
+                  child: CustomPaint(
+                    key: const ValueKey('daily-trend-plot'),
+                    size: Size(
+                      constraints.maxWidth,
+                      math.max(
+                        240,
+                        MediaQuery.textScalerOf(context).scale(150),
+                      ),
+                    ),
+                    painter: _TrendPainter(
+                      values: points
+                          .map((p) => p.value(profit)?.toDouble())
+                          .toList(),
+                      selected: selection,
+                      color: profit ? AppColors.danger : AppColors.primary,
+                      textScaler: MediaQuery.textScalerOf(context),
+                      left: left,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         Text(
@@ -242,21 +255,20 @@ class _TrendPainter extends CustomPainter {
     required this.selected,
     required this.color,
     required this.textScaler,
+    required this.left,
   });
   final List<double?> values;
   final int selected;
   final Color color;
   final TextScaler textScaler;
+  final double left;
   @override
   void paint(Canvas canvas, Size size) {
     final filled = values.whereType<double>().toList();
     var low = math.min(0.0, filled.reduce(math.min)),
         high = math.max(0.0, filled.reduce(math.max));
     if (low == high) high = 100;
-    final top = 24.0,
-        bottom = size.height - 24,
-        left = 86.0,
-        right = size.width - 16;
+    final top = 24.0, bottom = size.height - 24, right = size.width - 16;
     double y(double v) => bottom - (v - low) / (high - low) * (bottom - top);
     double x(int i) => values.length == 1
         ? (left + right) / 2
@@ -271,18 +283,20 @@ class _TrendPainter extends CustomPainter {
         Offset(right, yy),
         grid..color = value == 0 ? AppColors.secondary : AppColors.border,
       );
+      // A very small loss must not make the zero and minimum labels overlap.
+      if (value != 0 && (yy - y(0)).abs() < textScaler.scale(18)) continue;
       final label = TextPainter(
         text: TextSpan(
           text: _axis(value / 100),
           style: const TextStyle(
             fontFamily: 'Vazirmatn',
-            fontSize: 11,
+            fontSize: 12,
             color: AppColors.secondary,
           ),
         ),
         textDirection: TextDirection.ltr,
         textScaler: textScaler,
-      )..layout(maxWidth: 78);
+      )..layout(maxWidth: left - 12);
       label.paint(
         canvas,
         Offset(0, (yy - label.height / 2).clamp(0, size.height - label.height)),
@@ -319,5 +333,6 @@ class _TrendPainter extends CustomPainter {
       old.values != values ||
       old.selected != selected ||
       old.color != color ||
+      old.left != left ||
       old.textScaler != textScaler;
 }

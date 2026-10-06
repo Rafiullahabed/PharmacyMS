@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 import '../domain/validation.dart';
+import 'app_theme.dart';
+import 'components.dart';
 
 String persistenceMessage(Object error) {
   if (error is ValidationException) return error.message;
@@ -82,7 +84,7 @@ Future<bool> confirmAction(
       builder: (context) => AlertDialog(
         scrollable: true,
         title: Text(title),
-        content: Text(message),
+        content: ContentText(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -112,9 +114,30 @@ class ErrorNotice extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Semantics(
             liveRegion: true,
-            child: Text(
-              message!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.danger.withValues(alpha: .06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.danger.withValues(alpha: .3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 20,
+                    color: AppColors.danger,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    message!,
+                    style: const TextStyle(color: AppColors.danger),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -166,7 +189,9 @@ bool validateAndReveal(GlobalKey<FormState> key) {
   if (errors.isEmpty) return true;
   Scrollable.ensureVisible(
     errors.first.context,
-    duration: const Duration(milliseconds: 180),
+    duration: reduceMotion(errors.first.context)
+        ? Duration.zero
+        : const Duration(milliseconds: 180),
     alignment: 0.15,
   );
   return false;
@@ -197,59 +222,99 @@ class FormPage extends StatelessWidget {
       dirty: dirty,
       saving: save.saving,
       child: Scaffold(
-        appBar: AppBar(
-          toolbarHeight: MediaQuery.textScalerOf(context).scale(24) * 2 + 16,
-          title: Text(title, maxLines: 2),
-        ),
+        appBar: pageAppBar(context, title: title),
         body: SafeArea(
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 720),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: ExcludeFocus(
-                        excluding: save.saving || save.uncertain,
-                        child: IgnorePointer(
-                          ignoring: save.saving || save.uncertain,
-                          child: Form(
-                            key: formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: children,
-                            ),
-                          ),
+              child: FormViewport(
+                hasError: save.error != null,
+                content: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ExcludeFocus(
+                    excluding: save.saving || save.uncertain,
+                    child: IgnorePointer(
+                      ignoring: save.saving || save.uncertain,
+                      child: Form(
+                        key: formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: children,
                         ),
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (save.error != null)
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 100),
-                            child: SingleChildScrollView(
-                              child: ErrorNotice(save.error),
-                            ),
+                ),
+                footer: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (save.error != null)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 100),
+                          child: SingleChildScrollView(
+                            child: ErrorNotice(save.error),
                           ),
-                        FilledButton(
-                          onPressed: save.saving || !canSave ? null : onSave,
+                        ),
+                      FilledButton(
+                        onPressed: save.saving || !canSave
+                            ? null
+                            : () {
+                                FocusScope.of(context).unfocus();
+                                onSave();
+                              },
+                        child: Semantics(
+                          liveRegion: true,
                           child: Text(save.saving ? 'Saving…' : saveLabel),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
         ),
       ),
     ),
+  );
+}
+
+/// Keep Save within reach; in short keyboard/landscape viewports let the entire
+/// form scroll instead of squeezing its fields to zero height.
+class FormViewport extends StatelessWidget {
+  const FormViewport({
+    super.key,
+    required this.content,
+    required this.footer,
+    this.hasError = false,
+  });
+  final Widget content, footer;
+  final bool hasError;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      if (constraints.maxHeight < (hasError ? 260 : 140)) {
+        return SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [content, footer],
+          ),
+        );
+      }
+      return Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: content,
+            ),
+          ),
+          footer,
+        ],
+      );
+    },
   );
 }

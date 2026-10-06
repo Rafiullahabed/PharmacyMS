@@ -48,18 +48,12 @@ class _RepositoryViewState<T> extends State<RepositoryView<T>> {
       Widget status(Widget child) => widget.routeTitle == null
           ? child
           : Scaffold(
-              appBar: AppBar(title: Text(widget.routeTitle!)),
+              appBar: pageAppBar(context, title: widget.routeTitle!),
               body: SafeArea(child: child),
             );
       if (snapshot.hasError) return status(AppErrorState(onRetry: reload));
       if (snapshot.connectionState != ConnectionState.done) {
-        return status(
-          const Center(
-            child: CircularProgressIndicator(
-              semanticsLabel: 'Loading local data',
-            ),
-          ),
-        );
+        return status(const LoadingState());
       }
       return widget.builder(context, snapshot.data as T);
     },

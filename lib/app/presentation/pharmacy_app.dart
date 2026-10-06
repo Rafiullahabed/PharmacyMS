@@ -11,8 +11,10 @@ import '../../features/inventory/application/inventory_controller.dart';
 import '../../features/daily_records/application/daily_records_controller.dart';
 import '../../features/debtors/application/debt_controller.dart';
 import '../../features/backup/application/backup_controller.dart';
+import '../../features/settings/application/appearance_controller.dart';
+import '../../features/settings/presentation/appearance_settings.dart';
 
-class PharmacyApp extends StatelessWidget {
+class PharmacyApp extends StatefulWidget {
   const PharmacyApp({
     super.key,
     required this.controller,
@@ -27,17 +29,67 @@ class PharmacyApp extends StatelessWidget {
   final DebtController debt;
   final BackupController? backups;
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'Pharmacy Companion',
-    debugShowCheckedModeBanner: false,
-    theme: appTheme(),
-    locale: const Locale('en'),
-    home: NavigationShell(
-      controller: controller,
-      inventory: inventory,
-      daily: daily,
-      debt: debt,
-      backups: backups,
+  State<PharmacyApp> createState() => _PharmacyAppState();
+}
+
+class _PharmacyAppState extends State<PharmacyApp> with WidgetsBindingObserver {
+  late final appearance = AppearanceController(() => widget.inventory.settings);
+  int restoreRevision = 0;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    appearance.load();
+    widget.backups?.addListener(restored);
+  }
+
+  void restored() {
+    final backup = widget.backups!;
+    if (backup.busy || restoreRevision == backup.restoreRevision) return;
+    restoreRevision = backup.restoreRevision;
+    appearance.load();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) appearance.load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.backups?.removeListener(restored);
+    appearance.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AppearanceScope(
+    controller: appearance,
+    child: ListenableBuilder(
+      listenable: appearance,
+      builder: (context, _) => MaterialApp(
+        title: 'Pharmacy Companion',
+        debugShowCheckedModeBanner: false,
+        theme: appTheme(),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: AppTextScaler(
+              MediaQuery.textScalerOf(context),
+              appearance.size.factor,
+            ),
+          ),
+          child: child!,
+        ),
+        locale: const Locale('en'),
+        home: NavigationShell(
+          controller: widget.controller,
+          inventory: widget.inventory,
+          daily: widget.daily,
+          debt: widget.debt,
+          backups: widget.backups,
+        ),
+      ),
     ),
   );
 }
@@ -137,12 +189,13 @@ class _NavigationShellState extends State<NavigationShell>
       final model = widget.controller;
       final summary = model.summary;
       return Scaffold(
-        appBar: AppBar(
-          toolbarHeight: MediaQuery.textScalerOf(context).scale(24) * 2 + 16,
-          title: Text(
-            model.tab == 0 ? 'Pharmacy Companion' : labels[model.tab],
-            maxLines: 2,
-          ),
+        appBar: pageAppBar(
+          context,
+          title:
+              model.tab == 0 && MediaQuery.textScalerOf(context).scale(16) < 24
+              ? 'Pharmacy Companion'
+              : labels[model.tab],
+          leading: false,
           actions: [
             if (model.tab == 0 && summary != null)
               IconButton(
@@ -160,25 +213,24 @@ class _NavigationShellState extends State<NavigationShell>
           ],
         ),
         body: SafeArea(
-          child: model.failed
-              ? AppErrorState(onRetry: model.refresh)
-              : summary == null
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    semanticsLabel: 'Opening local data',
-                  ),
-                )
+          child: summary == null
+              ? model.failed
+                    ? AppErrorState(onRetry: model.refresh)
+                    : const LoadingState(label: 'Opening local data')
               : IndexedStack(
                   key: ValueKey(restoreRevision),
                   index: model.tab,
                   children: [
-                    HomeScreen(
-                      summary: summary,
-                      onNavigate: model.selectTab,
-                      inventory: widget.inventory,
-                      daily: widget.daily,
-                      debt: widget.debt,
-                    ),
+                    if (model.failed)
+                      AppErrorState(onRetry: model.refresh)
+                    else
+                      HomeScreen(
+                        summary: summary,
+                        onNavigate: model.selectTab,
+                        inventory: widget.inventory,
+                        daily: widget.daily,
+                        debt: widget.debt,
+                      ),
                     InventoryScreen(controller: widget.inventory),
                     DailyRecordsScreen(controller: widget.daily),
                     DebtorsScreen(controller: widget.debt),
@@ -187,60 +239,133 @@ class _NavigationShellState extends State<NavigationShell>
         ),
         bottomNavigationBar: SafeArea(
           top: false,
-          child: Material(
-            color: Colors.white,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var i = 0; i < labels.length; i++)
-                  Expanded(
-                    child: Semantics(
-                      selected: model.tab == i,
-                      button: true,
-                      child: InkWell(
-                        onTap: () => model.selectTab(i),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 64),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 12,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  icons[i],
-                                  color: model.tab == i
-                                      ? AppColors.primary
-                                      : AppColors.secondary,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  labels[i],
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: model.tab == i
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: model.tab == i
-                                        ? AppColors.primary
-                                        : AppColors.secondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          child: _Tabs(
+            selected: model.tab,
+            labels: labels,
+            icons: icons,
+            onSelected: (index) {
+              FocusScope.of(context).unfocus();
+              model.selectTab(index);
+            },
           ),
         ),
       );
     },
+  );
+}
+
+/// At large text sizes, two rows keep all four tab names readable without
+/// shrinking the user's text or splitting words in the middle.
+class _Tabs extends StatelessWidget {
+  const _Tabs({
+    required this.selected,
+    required this.labels,
+    required this.icons,
+    required this.onSelected,
+  });
+  final int selected;
+  final List<String> labels;
+  final List<IconData> icons;
+  final ValueChanged<int> onSelected;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final painter = TextPainter(
+        text: const TextSpan(
+          text: 'Inventory',
+          style: TextStyle(
+            fontFamily: 'Vazirmatn',
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout();
+      final expanded = painter.width + 12 > constraints.maxWidth / 4;
+      painter.dispose();
+      return Material(
+        color: Colors.white,
+        child: Wrap(
+          children: [
+            for (var i = 0; i < labels.length; i++)
+              SizedBox(
+                width: constraints.maxWidth / (expanded ? 2 : 4),
+                child: Semantics(
+                  label: labels[i],
+                  hint: 'Tab ${i + 1} of 4',
+                  selected: selected == i,
+                  button: true,
+                  excludeSemantics: true,
+                  onTap: () => onSelected(i),
+                  child: InkWell(
+                    onTap: () => onSelected(i),
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 64),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: expanded ? 12 : 4,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected == i && expanded
+                            ? const Color(0xFFE3F0ED)
+                            : null,
+                      ),
+                      child: expanded
+                          ? Row(
+                              children: [
+                                Icon(
+                                  icons[i],
+                                  size: 24,
+                                  color: selected == i
+                                      ? AppColors.primary
+                                      : AppColors.secondary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(child: _label(i)),
+                              ],
+                            )
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: selected == i
+                                        ? const Color(0xFFE3F0ED)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Icon(
+                                    icons[i],
+                                    color: selected == i
+                                        ? AppColors.primary
+                                        : AppColors.secondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                _label(i),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    },
+  );
+  Widget _label(int i) => Text(
+    labels[i],
+    textAlign: TextAlign.center,
+    style: TextStyle(
+      fontSize: 12,
+      fontWeight: selected == i ? FontWeight.w700 : FontWeight.w500,
+      color: selected == i ? AppColors.primary : AppColors.secondary,
+    ),
   );
 }

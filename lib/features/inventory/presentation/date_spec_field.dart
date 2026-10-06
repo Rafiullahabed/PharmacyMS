@@ -3,6 +3,7 @@ import '../../../core/domain/dates.dart';
 import '../../../core/domain/validation.dart';
 import '../../../core/presentation/form_fields.dart';
 import '../../../core/presentation/workflow.dart';
+import '../../../core/presentation/components.dart';
 
 enum DateInputMode { full, month, none }
 
@@ -145,142 +146,167 @@ class DateSpecFieldState extends State<DateSpecField> {
       builder: (field) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(widget.label, style: Theme.of(context).textTheme.titleMedium),
+          Semantics(
+            header: true,
+            child: Text(
+              widget.label,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
           const SizedBox(height: 8),
-          DropdownButtonFormField<DateInputMode>(
-            initialValue: mode,
-            isExpanded: true,
-            decoration: InputDecoration(labelText: '${widget.label} precision'),
-            items: [
-              const DropdownMenuItem(
-                value: DateInputMode.full,
-                child: Text('Full date'),
-              ),
-              const DropdownMenuItem(
-                value: DateInputMode.month,
-                child: Text('Month & year'),
-              ),
-              DropdownMenuItem(
-                value: DateInputMode.none,
-                child: Text(widget.expiry ? 'No expiry date' : 'Not entered'),
-              ),
-            ],
-            onChanged: (v) {
-              if (v == null) return;
-              setState(() {
-                mode = v;
-                _source = null;
-                _error = null;
-              });
-              widget.onChanged();
-              field.didChange(null);
-            },
+          LabeledControl(
+            label: '${widget.label} precision',
+            shortLabel: 'Precision',
+            child: DropdownButtonFormField<DateInputMode>(
+              itemHeight: null,
+              initialValue: mode,
+              isExpanded: true,
+              items: [
+                const DropdownMenuItem(
+                  value: DateInputMode.full,
+                  child: Text('Full date'),
+                ),
+                const DropdownMenuItem(
+                  value: DateInputMode.month,
+                  child: Text('Month & year'),
+                ),
+                DropdownMenuItem(
+                  value: DateInputMode.none,
+                  child: Text(widget.expiry ? 'No expiry date' : 'Not entered'),
+                ),
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() {
+                  mode = v;
+                  _source = null;
+                  _error = null;
+                });
+                widget.onChanged();
+                field.didChange(null);
+              },
+            ),
           ),
           if (mode != DateInputMode.none) ...[
             const SizedBox(height: 12),
-            DropdownButtonFormField<DateCalendar>(
-              key: ValueKey(
-                '${widget.label}-${calendar.name}-$_calendarRevision',
-              ),
-              initialValue: calendar,
-              isExpanded: true,
-              decoration: InputDecoration(
-                labelText: '${widget.label} calendar',
-              ),
-              items: const [
-                DropdownMenuItem(
-                  value: DateCalendar.gregorian,
-                  child: Text('Gregorian'),
+            LabeledControl(
+              label: '${widget.label} calendar',
+              shortLabel: 'Calendar',
+              child: DropdownButtonFormField<DateCalendar>(
+                itemHeight: null,
+                key: ValueKey(
+                  '${widget.label}-${calendar.name}-$_calendarRevision',
                 ),
-                DropdownMenuItem(
-                  value: DateCalendar.solarHijri,
-                  child: Text('Solar Hijri'),
-                ),
-              ],
-              onChanged: (v) async {
-                if (v != null) {
-                  await _calendar(v);
-                  if (mounted) {
-                    setState(() {
-                      _calendarRevision++;
-                    });
+                initialValue: calendar,
+                isExpanded: true,
+                items: const [
+                  DropdownMenuItem(
+                    value: DateCalendar.gregorian,
+                    child: Text('Gregorian'),
+                  ),
+                  DropdownMenuItem(
+                    value: DateCalendar.solarHijri,
+                    child: Text('Solar Hijri'),
+                  ),
+                ],
+                onChanged: (v) async {
+                  if (v != null) {
+                    await _calendar(v);
+                    if (mounted) {
+                      setState(() {
+                        _calendarRevision++;
+                      });
+                    }
                   }
-                }
-              },
+                },
+              ),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                for (final entry in [
-                  (year, 'Year'),
-                  (month, 'Month'),
-                  if (mode == DateInputMode.full) (day, 'Day'),
-                ])
-                  SizedBox(
-                    width: 110,
-                    child: TextField(
-                      controller: entry.$1,
-                      keyboardType: TextInputType.number,
-                      textDirection: TextDirection.ltr,
-                      decoration: InputDecoration(
-                        labelText: '${widget.label} ${entry.$2.toLowerCase()}',
+            LayoutBuilder(
+              builder: (context, constraints) => Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  for (final entry in [
+                    (year, 'Year'),
+                    (month, 'Month'),
+                    if (mode == DateInputMode.full) (day, 'Day'),
+                  ])
+                    SizedBox(
+                      width:
+                          constraints.maxWidth < 300 ||
+                              MediaQuery.textScalerOf(context).scale(16) > 24
+                          ? constraints.maxWidth
+                          : (constraints.maxWidth - 24) / 3,
+                      child: AppTextField(
+                        controller: entry.$1,
+                        label: '${widget.label} ${entry.$2.toLowerCase()}',
+                        shortLabel: entry.$2,
+                        keyboardType: TextInputType.number,
+                        forceLtr: true,
+                        onChanged: (_) {
+                          _edited();
+                          field.didChange(null);
+                        },
                       ),
-                      onChanged: (_) {
-                        _edited();
-                        field.didChange(null);
-                      },
                     ),
-                  ),
-              ],
-            ),
-            if (mode == DateInputMode.full)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  label: Text('Choose ${widget.label.toLowerCase()} date'),
-                  onPressed: () async {
-                    DateSpec initial;
-                    try {
-                      initial = value()!.representationIn(calendar);
-                    } catch (_) {
-                      initial = DateSpec(
-                        calendar: DateCalendar.gregorian,
-                        year: widget.today.year,
-                        month: widget.today.month,
-                        day: widget.today.day,
-                      ).representationIn(calendar);
-                    }
-                    final selected = await showDialog<DateSpec>(
-                      context: context,
-                      builder: (_) => _DatePicker(initial),
-                    );
-                    if (selected != null && mounted) {
-                      setState(() {
-                        _source = null;
-                        _write(selected);
-                        _error = null;
-                      });
-                      widget.onChanged();
-                      field.didChange(selected);
-                    }
-                  },
-                ),
+                ],
               ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.calendar_month_outlined),
+                label: Text(
+                  'Choose ${widget.label.toLowerCase()} ${mode == DateInputMode.month ? 'month' : 'date'}',
+                ),
+                onPressed: () async {
+                  DateSpec initial;
+                  try {
+                    initial = value()!.representationIn(calendar);
+                  } catch (_) {
+                    initial = DateSpec(
+                      calendar: DateCalendar.gregorian,
+                      year: widget.today.year,
+                      month: widget.today.month,
+                      day: widget.today.day,
+                    ).representationIn(calendar);
+                  }
+                  if (mode == DateInputMode.month) {
+                    initial = DateSpec(
+                      calendar: initial.calendar,
+                      year: initial.year,
+                      month: initial.month,
+                    );
+                  }
+                  final selected = await showDialog<DateSpec>(
+                    context: context,
+                    builder: (_) => _DatePicker(initial),
+                  );
+                  if (selected != null && mounted) {
+                    setState(() {
+                      _source = null;
+                      _write(selected);
+                      _error = null;
+                    });
+                    widget.onChanged();
+                    field.didChange(selected);
+                  }
+                },
+              ),
+            ),
             if (mode == DateInputMode.month && widget.expiry)
               const Padding(
                 padding: EdgeInsets.only(top: 8),
                 child: Text(
-                  'For alerts, a month-only expiry is treated as the end of that month.',
+                  'For alerts, a month-only expiry is treated as the end of that month in the selected calendar.',
                 ),
               ),
             if (preview != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  '${preview.label}\nGregorian equivalent: ${preview.range.start.label}${preview.day == null ? ' – ${preview.range.end.label}' : ''}',
+                  'Saved as: ${preview.label}${preview.calendar == DateCalendar.solarHijri ? '\nGregorian equivalent: ${preview.range.start.label}${preview.day == null ? ' – ${preview.range.end.label}' : ''}' : ''}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -303,7 +329,7 @@ class _DatePicker extends StatefulWidget {
 
 class _DatePickerState extends State<_DatePicker> {
   late final year = TextEditingController(text: '${widget.initial.year}');
-  late int month = widget.initial.month, day = widget.initial.day!;
+  late int month = widget.initial.month, day = widget.initial.day ?? 1;
   String? error;
   int get selectedYear => int.tryParse(normalizeDigits(year.text)) ?? 0;
   int get days {
@@ -370,6 +396,7 @@ class _DatePickerState extends State<_DatePicker> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<int>(
+              itemHeight: null,
               key: ValueKey('month-$month'),
               initialValue: month,
               isExpanded: true,
@@ -383,19 +410,21 @@ class _DatePickerState extends State<_DatePicker> {
               }),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<int>(
-              key: ValueKey('day-$month-$day-$days'),
-              initialValue: day,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Day'),
-              items: [
-                for (var i = 1; i <= days; i++)
-                  DropdownMenuItem(value: i, child: Text('$i')),
-                if (day > days)
-                  DropdownMenuItem(value: day, child: Text('$day (invalid)')),
-              ],
-              onChanged: (v) => setState(() => day = v!),
-            ),
+            if (widget.initial.day != null)
+              DropdownButtonFormField<int>(
+                itemHeight: null,
+                key: ValueKey('day-$month-$day-$days'),
+                initialValue: day,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Day'),
+                items: [
+                  for (var i = 1; i <= days; i++)
+                    DropdownMenuItem(value: i, child: Text('$i')),
+                  if (day > days)
+                    DropdownMenuItem(value: day, child: Text('$day (invalid)')),
+                ],
+                onChanged: (v) => setState(() => day = v!),
+              ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -430,14 +459,14 @@ class _DatePickerState extends State<_DatePicker> {
                 calendar: widget.initial.calendar,
                 year: selectedYear,
                 month: month,
-                day: day,
+                day: widget.initial.day == null ? null : day,
               ),
             );
           } on ValidationException catch (e) {
             setState(() => error = e.message);
           }
         },
-        child: const Text('Use date'),
+        child: Text(widget.initial.day == null ? 'Use month' : 'Use date'),
       ),
     ],
   );

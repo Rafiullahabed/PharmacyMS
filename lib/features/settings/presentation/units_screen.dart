@@ -87,8 +87,9 @@ class _UnitsScreenState extends State<UnitsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Units'),
+    appBar: pageAppBar(
+      context,
+      title: 'Units',
       actions: [
         IconButton(
           tooltip: 'Add unit',
@@ -130,7 +131,10 @@ class _UnitsScreenState extends State<UnitsScreen> {
                         (u) => u.inactive == inactive,
                       ))
                         ListTile(
-                          contentPadding: EdgeInsets.zero,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           title: ContentText(unit.name),
                           subtitle: Text(
                             (data.usage[unit.meta.id] ?? 0) == 0
