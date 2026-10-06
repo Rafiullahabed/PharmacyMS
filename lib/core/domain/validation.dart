@@ -23,6 +23,9 @@ String normalizeDigits(String value) {
 String searchKey(String value) =>
     value.trim().toLowerCase().replaceAll('ي', 'ی').replaceAll('ك', 'ک');
 
+String phoneSearchKey(String value) =>
+    normalizeDigits(searchKey(value)).replaceAll(RegExp(r'[\s()+-]'), '');
+
 int wholeQuantity(String input, {bool positive = false}) {
   final value = normalizeDigits(input.trim());
   final parsed = int.tryParse(value);

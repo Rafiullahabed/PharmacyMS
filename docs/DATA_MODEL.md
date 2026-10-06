@@ -1,6 +1,6 @@
 # Local data foundation
 
-The two files in `explainations/` govern the product. This describes Phase 1–5 implementation decisions, not additional product scope.
+The two files in `explainations/` govern the product. This describes Phase 1–6 implementation decisions, not additional product scope.
 
 ## Ownership and layers
 
@@ -24,7 +24,7 @@ Presentation does not write SQL. Inventory, daily records, and debt repositories
 | ledger_entries | Customer FK, positive money, stable sequence, business date and type |
 | correction_audits | Immutable before/after JSON snapshots, entry identity, customer FK, action/reason/timestamps |
 | debt_operations | Immutable request/result receipts for customer save, ledger add/edit/delete and archive/restore |
-| app_settings | Versioned key/value preferences with UUID and timestamps; can hold later backup metadata |
+| app_settings | Versioned key/value preferences with UUID and timestamps, backup preparation and restore metadata |
 | sequence_counters | Internal monotonic ordering counters; deletion does not reuse a sequence |
 | inventory_operations | Immutable UUID, mutation kind, exact JSON request payload, result entity identity and timestamps; persisted in the same transaction as the change |
 | daily_operations | Immutable UUID, save/delete kind, exact request and result snapshot JSON, timestamps; atomic with the daily mutation |
@@ -35,7 +35,7 @@ Ledger insert/edit/delete validates chronological balances ordered by `(business
 
 Phase 2 product, batch, unit and archive mutations accept durable operation IDs. A receipt is saved only if the whole transaction commits. A matching retry returns the same entity without applying a second change; mismatched payload reuse is rejected. Product plus optional initial batch/date specs/opening movement is one transaction. Metadata edits never overwrite quantity; date corrections create new immutable date specifications. UI review shows old/new dates and unchanged quantity. Orphaned old date specifications are retained. Archive/restore preserves UUIDs and history; an archived product's batches remain independently archived or active when the product is restored.
 
-The save controller disables concurrent submission. For a confirmed validation/database rollback, edited input can start a new operation. An unknown save outcome keeps the same operation ID and freezes input until an identical retry reconciles the receipt/movement. Undo has its own stable reversal ID and cannot make stock negative. Any future complete backup must include operation receipts, movements, inactive units, date specifications and sequence counters; do not strip retry identities during restore.
+The save controller disables concurrent submission. For a confirmed validation/database rollback, edited input can start a new operation. An unknown save outcome keeps the same operation ID and freezes input until an identical retry reconciles the receipt/movement. Undo has its own stable reversal ID and cannot make stock negative. Phase 6 backups include operation receipts, movements, inactive units, date specifications and sequence counters, preserving retry identities through replacement.
 
 Paged product/customer/daily/history reads default to 50 (maximum 200). Phase 3 expiry pages join products, units and source dates in one data query, with exact affected-batch and distinct-product counts. Product detail still loads every batch for that product; individual batch date reads and affected-ledger validation prioritize correctness over the later large-dataset performance target. The 5,000/20,000/50,000 performance target has **not** been verified.
 
@@ -56,7 +56,7 @@ Home's dashboard is one SQLite transaction containing counts and a bounded Needs
 
 Daily records keep one unique Gregorian civil date, exact AFN sales and manually entered signed profit, optional Unicode note, UUID and event timestamps. Sales must be nonnegative; both values may be zero and profit may exceed sales. Future business dates are rejected against the injected local clock at commit time. Edits replace values and may move a record to an unused date while retaining identity. Conflicts preserve existing data and offer the saved record for editing.
 
-Every UI save/delete supplies a stable operation UUID. A v4 `daily_operations` receipt stores the exact request and result in the same transaction. Identical retries return the original result without applying the mutation again, including after reopening, later edits or deletion. Mismatched reuse is rejected. Deleted records are not resurrected by replaying an older save. As with inventory, an unknown outcome freezes input until the same operation is reconciled; errors never announce success. The future backup format must include these receipts, including snapshots retained after deletion.
+Every UI save/delete supplies a stable operation UUID. A v4 `daily_operations` receipt stores the exact request and result in the same transaction. Identical retries return the original result without applying the mutation again, including after reopening, later edits or deletion. Mismatched reuse is rejected. Deleted records are not resurrected by replaying an older save. As with inventory, an unknown outcome freezes input until the same operation is reconciled; errors never announce success. Backups include these receipts and snapshots retained after deletion.
 
 `DailyRecordsController` emits financial refreshes to its views and application Home summaries without invoking inventory/debt writes. Shell resume and the existing local-day watcher invalidate time-sensitive financial reads. Report range validation, inclusive date arithmetic, coverage, monthly buckets and comparisons live in `daily_report.dart`, outside widgets. The repository reads current and previous periods in one SQLite transaction using the unique business-date index.
 
@@ -74,7 +74,7 @@ Customers have a required trimmed name, optional raw text phone and note, stable
 
 Ledger entries are independent positive AFN amounts with type Debt or Payment, Gregorian business date, free-text multiline description and permanent saved sequence. Dates default to the injected clock's local day, with past dates allowed and future dates rejected at commit. The balance is derived from entries. `projectLedger` orders by business date then sequence and validates every running balance using BigInt; both previews and writes use it. It rejects overpayments, historical deficits and amounts beyond the supported per-customer limit. Edits keep identity, sequence and created time. Deletes and edits append full before/after correction snapshots atomically and never rewrite dependent entries.
 
-The UI supplies durable operation IDs for every mutation. The same request after duplicate taps, a lost acknowledgment or database reopen returns the saved receipt; changed reuse is rejected. An older receipt never overwrites subsequent corrections or resurrects deleted entries. Deleted add-entry IDs remain unusable. Receipt/audit failures roll back all changes. Unknown outcomes freeze form input for reconciliation. The future backup format must include debt receipts as well as correction audits and sequence counters.
+The UI supplies durable operation IDs for every mutation. The same request after duplicate taps, a lost acknowledgment or database reopen returns the saved receipt; changed reuse is rejected. An older receipt never overwrites subsequent corrections or resurrects deleted entries. Deleted add-entry IDs remain unusable. Receipt/audit failures roll back all changes. Unknown outcomes freeze form input for reconciliation. Backups preserve debt receipts, correction audits and sequence counters.
 
 Customer, transaction and correction lists load pages of 50. Transaction rows are newest first and calculate the correct running balance using the older prefix, without loading the complete history for display. Preview and mutation validation recompute the whole affected customer's ledger. Search/list aggregates use SQL per-customer balances; global outstanding totals in customer lists and Home use BigInt, so several valid customer balances can exceed a single-customer amount bound without rounding.
 
@@ -90,7 +90,13 @@ Customer, transaction and correction lists load pages of 50. Transaction rows ar
 - `DateSpec` supports Gregorian and Solar Hijri with full-date or month precision. A null expiry is explicitly persisted as `expiry_mode=none`. Original components are authoritative. Canonical ranges derive from `shamsi_date`; month expiry uses the original calendar's last day.
 - Convertible batch-date range: Solar Hijri 0001/01/01 through 3177/10/11, ending Gregorian 3798-12-31. A month-only input must have both endpoints in range. Business dates independently support Gregorian years 1–9999.
 - Calendar display conversion creates a new full-date representation without modifying the original. The reusable date control retains that source on display-only switching. Month-only values show their equivalent range and require confirmed clearing/re-entry to change the source calendar. Both calendars support typed input and full-date component pickers. Invalid dates are rejected rather than normalized.
-- SQL validates civil date shapes/actual lengths, source month lengths/leaps, precision, expiry-mode consistency, and production/expiry ordering. Repository/domain code computes and validates the Solar Hijri-to-Gregorian correspondence. A future restore importer must independently reconstruct DateSpec and compare canonical endpoints before import.
+- SQL validates civil date shapes/actual lengths, source month lengths/leaps, precision, expiry-mode consistency, and production/expiry ordering. Repository/domain code computes and validates the Solar Hijri-to-Gregorian correspondence. Restore independently reconstructs DateSpec and compares canonical endpoints in staging before replacement.
 - Search keys normalize case and Arabic/Persian yeh/kaf without changing saved names/notes. Required names are trimmed; phone strings retain leading zeros. Content direction follows the first strong English/Persian character while interface labels and money stay LTR.
 
-Only six suggested units are seeded. No operational records or backup-success metadata are fabricated. Export/restore and its ZIP/JSON format remain unimplemented; do not treat the internal SQLite file as a portable backup.
+## Portable backup and replacement
+
+Phase 6 adds `features/backup` with a ChangeNotifier application controller, portable codec, SQLite adapter, and native file port. Schema remains version 5. All 14 tables are read in one transaction, including retained dates, inactive/archived entities and every retry receipt. INTEGER columns become decimal strings inside the UTF-8 JSON payload; native database files and device paths are not serialized.
+
+Import validates a separate database at its source schema, runs existing migrations and checks every relationship and stock/debt invariant before preview. Explicit confirmation creates an independent private safety ZIP, then replaces all logical rows inside one FULL-synchronous live transaction. Trusted triggers and data roll back together on failure. `backup.last_restore` records the commit for acknowledgment reconciliation. Existing connections remain valid; repository wrappers, cached views and Home are refreshed after success. See [BACKUP_FORMAT.md](BACKUP_FORMAT.md) for complete limits, compatibility, file retention and native outcome semantics.
+
+Only six suggested units are seeded. No operational records or backup-success metadata are fabricated. The internal SQLite file itself is not the portable backup format.

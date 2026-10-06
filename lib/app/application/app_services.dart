@@ -10,6 +10,8 @@ import '../../features/inventory/data/sqlite_inventory_repository.dart';
 import '../../features/inventory/domain/inventory.dart';
 import '../../features/settings/data/sqlite_settings_repository.dart';
 import '../../features/settings/domain/settings_repository.dart';
+import '../../features/backup/data/sqlite_backup_repository.dart';
+import '../../features/backup/domain/backup.dart';
 
 /// Composition root. Future adapters belong behind these interfaces.
 class AppServices {
@@ -18,11 +20,13 @@ class AppServices {
       dailyRecords = SqliteDailyRecordsRepository(database.connection, clock),
       debtors = SqliteDebtRepository(database.connection, clock),
       settings = SqliteSettingsRepository(database.connection, clock),
-      home = SqliteHomeRepository(database.connection);
+      home = SqliteHomeRepository(database.connection),
+      backups = SqliteBackupRepository(database, clock);
   final AppDatabase database;
   final InventoryRepository inventory;
   final DailyRecordsRepository dailyRecords;
   final DebtRepository debtors;
   final SettingsRepository settings;
   final HomeRepository home;
+  final BackupRepository backups;
 }

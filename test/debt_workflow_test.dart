@@ -761,6 +761,8 @@ void main() {
         expect(tester.getRect(action('Add debt')).bottom, lessThan(388));
         await screenshot(tester, 'narrow-ledger-form');
         await tap(tester, find.text('Insert item name'));
+        await tester.ensureVisible(find.text('Amoxicillin').last);
+        await frames(tester);
         await screenshot(tester, 'narrow-suggestions');
         await tap(tester, find.widgetWithText(ListTile, 'Amoxicillin'));
         tester.view.resetViewInsets();
@@ -774,9 +776,25 @@ void main() {
         await screenshot(tester, 'narrow-entry');
         await tap(tester, find.byTooltip('Entry actions'));
         await tap(tester, find.text('Delete entry'));
+        await tester.drag(
+          find.byType(SingleChildScrollView).last,
+          const Offset(0, -260),
+        );
+        await frames(tester);
         await screenshot(tester, 'narrow-delete');
         await tap(tester, find.text('Cancel'));
         expect(find.byTooltip('Entry actions'), findsOneWidget);
+        tester.platformDispatcher.textScaleFactorTestValue = 1;
+        tester.view.physicalSize = const Size(390, 844);
+        await tester.pump();
+        await tester.pageBack();
+        await frames(tester);
+        await tester.drag(find.byType(Scrollable).last, const Offset(0, 3000));
+        await frames(tester);
+        await screenshot(tester, 'phone-customer');
+        await tester.pageBack();
+        await frames(tester);
+        await screenshot(tester, 'phone-debtors');
         expect(tester.takeException(), isNull);
       } finally {
         semantics.dispose();

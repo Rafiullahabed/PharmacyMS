@@ -50,71 +50,90 @@ class _NamesDialogState extends State<_NamesDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Insert item name'),
-    content: SizedBox(
-      width: 480,
-      height: 320,
+  Widget build(BuildContext context) => Dialog(
+    insetPadding: const EdgeInsets.all(16),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 480, maxHeight: 480),
       child: Column(
         children: [
-          TextField(
-            controller: search,
-            onChanged: changed,
-            decoration: const InputDecoration(
-              labelText: 'Search item names',
-              prefixIcon: Icon(Icons.search),
-            ),
-            textDirection: contentDirection(search.text),
-          ),
-          const SizedBox(height: 8),
           Expanded(
-            child: FutureBuilder<List<String>>(
-              future: future,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return ListView(
-                    children: [
-                      const Text(
-                        'Unable to read item names. You can still type your description.',
-                      ),
-                      TextButton(
-                        onPressed: () => setState(() {
-                          future = load();
-                        }),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  );
-                }
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final names = snapshot.data!;
-                if (names.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No matching items. Type any description in the form.',
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  itemCount: names.length,
-                  itemBuilder: (context, i) => ListTile(
-                    title: ContentText(names[i]),
-                    onTap: () => Navigator.pop(context, names[i]),
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Semantics(
+                  namesRoute: true,
+                  header: true,
+                  child: Text(
+                    'Insert item name',
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
-                );
-              },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: search,
+                  onChanged: changed,
+                  decoration: const InputDecoration(
+                    labelText: 'Search item names',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                  textDirection: contentDirection(search.text),
+                ),
+                const SizedBox(height: 12),
+                FutureBuilder<List<String>>(
+                  future: future,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Column(
+                        children: [
+                          const Text(
+                            'Unable to read item names. You can still type your description.',
+                          ),
+                          TextButton(
+                            onPressed: () => setState(() {
+                              future = load();
+                            }),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      );
+                    }
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final names = snapshot.data!;
+                    if (names.isEmpty) {
+                      return const Text(
+                        'No matching items. Type any description in the form.',
+                      );
+                    }
+                    // Suggestions are bounded to 20; title, search and results
+                    // scroll together when the keyboard or large text reduces space.
+                    return Column(
+                      children: [
+                        for (final name in names)
+                          ListTile(
+                            title: ContentText(name),
+                            onTap: () => Navigator.pop(context, name),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
             ),
           ),
         ],
       ),
     ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
-      ),
-    ],
   );
 }

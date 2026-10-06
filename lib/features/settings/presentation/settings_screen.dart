@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import '../../../core/presentation/components.dart';
 import '../../inventory/application/inventory_controller.dart';
 import 'units_screen.dart';
+import '../../backup/application/backup_controller.dart';
+import '../../backup/presentation/backup_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key, required this.controller});
+  const SettingsScreen({super.key, required this.controller, this.backups});
   final InventoryController controller;
+  final BackupController? backups;
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Settings')),
@@ -33,9 +36,24 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
-          const Section(
+          Section(
             title: 'Backup & Restore',
-            child: Text('Backup and restore are not available in this build.'),
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Portable backup and restore'),
+              subtitle: const Text(
+                'Keep a private copy or restore a previous backup.',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: backups == null
+                  ? null
+                  : () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BackupScreen(controller: backups!),
+                      ),
+                    ),
+            ),
           ),
           const Section(
             title: 'About',
@@ -44,10 +62,10 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 Text('Pharmacy Companion'),
                 SizedBox(height: 8),
-                Text('Phase 5 · Customer debt notebook'),
+                Text('Phase 6 · Portable backup and restore'),
                 SizedBox(height: 8),
                 Text(
-                  'Inventory and units work on this device. Daily record entry, customer ledger screens, and backups will follow in later phases.',
+                  'Inventory, manual daily sales/profit and customer debt work independently on this device. Portable backups include all records and settings.',
                 ),
               ],
             ),
@@ -56,7 +74,7 @@ class SettingsScreen extends StatelessWidget {
             onPressed: () => showLicensePage(
               context: context,
               applicationName: 'Pharmacy Companion',
-              applicationVersion: '0.5.0',
+              applicationVersion: '0.6.0',
             ),
             child: const Text('Open-source licenses'),
           ),

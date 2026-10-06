@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import '../domain/validation.dart';
 
 /// Append new numbered migrations; never change a released migration.
 const schemaVersion = 5;
@@ -62,6 +63,27 @@ Future<void> migrate(DatabaseExecutor db, int from, int to) async {
     }) {
       await db.execute(sql);
     }
+    if (version == 5) {
+      // Use the same normalization as new saves, without changing raw phone text.
+      for (var offset = 0; ; offset += 500) {
+        final rows = await db.query(
+          'customers',
+          columns: ['id', 'phone'],
+          orderBy: 'id',
+          limit: 500,
+          offset: offset,
+        );
+        for (final row in rows) {
+          await db.update(
+            'customers',
+            {'phone_key': phoneSearchKey(row['phone'] as String? ?? '')},
+            where: 'id=?',
+            whereArgs: [row['id']],
+          );
+        }
+        if (rows.length < 500) break;
+      }
+    }
   }
 }
 
@@ -74,15 +96,12 @@ final _dailyOperations = <String>[
 ];
 
 final _debtOperations = <String>[
-  '''CREATE TABLE debt_operations (${_id()}, kind TEXT NOT NULL,
+  '''CREATE TABLE debt_operations (${_id()}, kind TEXT NOT NULL CHECK(kind IN ('customer','add','edit','delete','archive')),
     payload TEXT NOT NULL, result TEXT NOT NULL, $_timestamps)''',
   for (final operation in ['UPDATE', 'DELETE'])
     '''CREATE TRIGGER debt_operations_${operation.toLowerCase()} BEFORE $operation ON debt_operations
     BEGIN SELECT RAISE(ABORT,'Operation receipts are immutable'); END''',
   "ALTER TABLE customers ADD COLUMN phone_key TEXT NOT NULL DEFAULT ''",
-  "UPDATE customers SET phone_key=replace(replace(replace(replace(replace(coalesce(phone,''),' ',''),'-',''),'(',''),')',''),'+','')",
-  for (var digit = 0; digit < 10; digit++)
-    "UPDATE customers SET phone_key=replace(replace(phone_key,'${'۰۱۲۳۴۵۶۷۸۹'[digit]}','$digit'),'${'٠١٢٣٤٥٦٧٨٩'[digit]}','$digit')",
   'CREATE INDEX customer_phone_search ON customers(archived,phone_key)',
 ];
 

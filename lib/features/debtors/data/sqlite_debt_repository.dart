@@ -12,9 +12,7 @@ class SqliteDebtRepository implements DebtRepository {
   SqliteDebtRepository(this.db, this.clock);
   final Database db;
   final AppClock clock;
-  String _phoneKey(String? value) => normalizeDigits(
-    searchKey(value ?? ''),
-  ).replaceAll(RegExp(r'[\s()+-]'), '');
+  String _phoneKey(String? value) => phoneSearchKey(value ?? '');
 
   Future<DataRow> _operation(
     DatabaseExecutor tx,
@@ -277,10 +275,11 @@ class SqliteDebtRepository implements DebtRepository {
   }
 
   void _validate(BusinessDate date, Money amount) {
-    validateNotFuture(date, clock);
-    if (amount.minor <= 0) {
-      throw const ValidationException('Enter a positive amount.');
-    }
+    LedgerDraft(
+      date: date,
+      kind: LedgerKind.debt,
+      amount: amount,
+    ).validate(clock);
   }
 
   /// Revalidate the entire affected chronology inside the write transaction.

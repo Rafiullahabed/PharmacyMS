@@ -26,6 +26,11 @@ class DailyRecordsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void resetRepositories() {
+    _repository = null;
+    changed();
+  }
+
   void refreshDay() {
     if (_day != clock.today()) changed();
   }

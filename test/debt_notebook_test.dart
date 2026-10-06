@@ -509,7 +509,7 @@ void main() {
   test(
     'v4 migration preserves old customer phone, ledger, audit and installs searchable keys',
     () async {
-      final c = await customer(phone: '۰۷۰۰ (۱۲۳)-۴۵۶'),
+      final c = await customer(phone: '۰۷۰۰\t(۱۲۳)-۴۵۶'),
           debt = await entry(c, '500');
       await repo().editEntry(
         id: debt.meta.id,

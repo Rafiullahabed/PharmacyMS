@@ -10,6 +10,7 @@ import '../application/app_controller.dart';
 import '../../features/inventory/application/inventory_controller.dart';
 import '../../features/daily_records/application/daily_records_controller.dart';
 import '../../features/debtors/application/debt_controller.dart';
+import '../../features/backup/application/backup_controller.dart';
 
 class PharmacyApp extends StatelessWidget {
   const PharmacyApp({
@@ -18,11 +19,13 @@ class PharmacyApp extends StatelessWidget {
     required this.inventory,
     required this.daily,
     required this.debt,
+    this.backups,
   });
   final AppController controller;
   final InventoryController inventory;
   final DailyRecordsController daily;
   final DebtController debt;
+  final BackupController? backups;
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'Pharmacy Companion',
@@ -34,6 +37,7 @@ class PharmacyApp extends StatelessWidget {
       inventory: inventory,
       daily: daily,
       debt: debt,
+      backups: backups,
     ),
   );
 }
@@ -45,17 +49,20 @@ class NavigationShell extends StatefulWidget {
     required this.inventory,
     required this.daily,
     required this.debt,
+    this.backups,
   });
   final AppController controller;
   final InventoryController inventory;
   final DailyRecordsController daily;
   final DebtController debt;
+  final BackupController? backups;
   @override
   State<NavigationShell> createState() => _NavigationShellState();
 }
 
 class _NavigationShellState extends State<NavigationShell>
     with WidgetsBindingObserver {
+  int restoreRevision = 0;
   static const labels = ['Home', 'Inventory', 'Daily Records', 'Debtors'];
   static const icons = [
     Icons.home_outlined,
@@ -72,6 +79,21 @@ class _NavigationShellState extends State<NavigationShell>
     widget.inventory.addListener(inventoryChanged);
     widget.daily.addListener(dailyChanged);
     widget.debt.addListener(debtChanged);
+    widget.backups?.addListener(backupChanged);
+  }
+
+  void backupChanged() {
+    final backup = widget.backups!;
+    if (backup.busy || restoreRevision == backup.restoreRevision) return;
+    setState(() => restoreRevision = backup.restoreRevision);
+    widget.controller.selectTab(0);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(backup.message ?? 'Backup restored.')),
+      );
+    });
   }
 
   void inventoryChanged() {
@@ -104,6 +126,7 @@ class _NavigationShellState extends State<NavigationShell>
     widget.inventory.removeListener(inventoryChanged);
     widget.daily.removeListener(dailyChanged);
     widget.debt.removeListener(debtChanged);
+    widget.backups?.removeListener(backupChanged);
     super.dispose();
   }
 
@@ -127,8 +150,10 @@ class _NavigationShellState extends State<NavigationShell>
                 icon: const Icon(Icons.settings_outlined),
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) =>
-                        SettingsScreen(controller: widget.inventory),
+                    builder: (_) => SettingsScreen(
+                      controller: widget.inventory,
+                      backups: widget.backups,
+                    ),
                   ),
                 ),
               ),
@@ -144,6 +169,7 @@ class _NavigationShellState extends State<NavigationShell>
                   ),
                 )
               : IndexedStack(
+                  key: ValueKey(restoreRevision),
                   index: model.tab,
                   children: [
                     HomeScreen(

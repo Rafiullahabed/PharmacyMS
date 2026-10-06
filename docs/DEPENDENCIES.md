@@ -1,6 +1,6 @@
 # Dependencies and offline assets
 
-Resolved with Flutter 3.41.5 / Dart 3.11.3 on 2026-10-05. Exact direct/transitive versions and hashes are in `pubspec.lock`. Dependencies were selected against the installed SDK; newer incompatible versions were not forced.
+Resolved with Flutter 3.41.5 / Dart 3.11.3; Phase 6 additions on 2026-10-06. Exact direct/transitive versions and hashes are in `pubspec.lock`. Dependencies were selected against the installed SDK; newer incompatible versions were not forced.
 
 | Direct dependency | Locked version | License | Purpose |
 |---|---|---|---|
@@ -10,6 +10,9 @@ Resolved with Flutter 3.41.5 / Dart 3.11.3 on 2026-10-05. Exact direct/transitiv
 | uuid | 4.6.0 | MIT | Secure random local UUIDs |
 | shamsi_date | 1.1.1 | BSD-3-Clause | Gregorian / Solar Hijri conversion |
 | cupertino_icons | 1.0.9 | MIT | Existing Flutter starter icon dependency |
+| crypto | 3.0.7 | BSD-3-Clause | SHA-256 backup corruption detection |
+| file_picker | 10.3.10 | MIT | Scoped native file selection and destination saving |
+| share_plus | 12.0.1 | BSD-3-Clause | Native share sheet and completion status |
 | flutter_test | SDK | BSD-3-Clause | Domain, repository and widget tests |
 | flutter_lints | 6.0.0 | BSD-3-Clause | Static analysis |
 | sqflite_common_ffi | 2.4.0+3 | BSD-2-Clause | Real SQLite host tests (development only) |
@@ -22,4 +25,8 @@ Bundled font SHA-256: `696249a2c74b39ffdef55de4df2809c5b639d3ff80d618d8160a095d2
 
 Primary references: [sqflite](https://pub.dev/packages/sqflite), [shamsi_date](https://pub.dev/packages/shamsi_date), [sqflite_common_ffi](https://pub.dev/packages/sqflite_common_ffi), [Vazirmatn font source and license](https://github.com/google/fonts/tree/main/ofl/vazirmatn).
 
-Android uses the existing Flutter-managed SDK values and Java 17 source compatibility. The existing iOS project targets iOS 13.0. On macOS, Flutter resolves the iOS plugin integration; Xcode/signing and actual device behavior remain to be verified. Existing example application identifiers and debug signing are development defaults; release identity/signing is not configured.
+Backup references: [crypto](https://pub.dev/packages/crypto), [file_picker 10.3.10](https://pub.dev/packages/file_picker/versions/10.3.10), [share_plus 12.0.1](https://pub.dev/packages/share_plus/versions/12.0.1). These execute local hashing and OS file/share workflows, with no runtime account/server requirement. The ZIP STORE profile is implemented in the repository and documented in [BACKUP_FORMAT.md](BACKUP_FORMAT.md); no general-purpose archive extraction package is used. Generated plugin registrants were updated by Flutter for retained starter platforms; this does not add supported desktop/web runtime targets.
+
+Android retains Flutter-managed SDK values, Gradle 8.14, Kotlin 2.2.20 and Java 17 source compatibility. AGP was updated from 8.11.1 to **8.12.1**, the minimum required by the selected share plugin. Flutter builds here use Android Studio's Java 21 runtime; the unrelated system Java 26 is not compatible with this Gradle setup. The existing iOS project targets iOS 13.0. On macOS, Flutter resolves iOS plugin integration; Xcode/signing and actual iOS behavior remain to be verified. Existing example application identifiers and debug signing are development defaults; release identity/signing is not configured. Native picker access is scoped; the app adds no broad storage, photo-library, notification or network permission for backups.
+
+Python 3 on PATH is needed only by the host backup interoperability test, which independently reads and rewrites the ZIP/JSON format. It is not an app dependency.

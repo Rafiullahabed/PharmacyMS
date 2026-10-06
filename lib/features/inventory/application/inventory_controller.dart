@@ -35,6 +35,12 @@ class InventoryController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void resetRepositories() {
+    _dependencies = null;
+    adjustmentOpen = false;
+    changed();
+  }
+
   void refreshDay() {
     if (_lastDay != clock.today()) changed();
   }

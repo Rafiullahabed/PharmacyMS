@@ -9,6 +9,8 @@ import 'core/domain/dates.dart';
 import 'features/inventory/application/inventory_controller.dart';
 import 'features/daily_records/application/daily_records_controller.dart';
 import 'features/debtors/application/debt_controller.dart';
+import 'features/backup/application/backup_controller.dart';
+import 'features/backup/data/native_backup_files.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,15 +40,31 @@ void main() {
     clock: clock,
     resolve: () async => (await resolve()).dailyRecords,
   );
+  final debt = DebtController(
+    clock: clock,
+    resolve: () async => (await resolve()).debtors,
+  );
+  final backups = BackupController(
+    resolve: () async => (await resolve()).backups,
+    files: NativeBackupFiles(),
+    onRestored: () async {
+      final database = (await resolve()).database;
+      services = AppServices(database, clock);
+      inventory.resetRepositories();
+      daily.resetRepositories();
+      debt.resetRepositories();
+      controller.summary = null;
+      controller.selectTab(0);
+      await controller.refresh();
+    },
+  );
   runApp(
     PharmacyApp(
       controller: controller,
       inventory: inventory,
       daily: daily,
-      debt: DebtController(
-        clock: clock,
-        resolve: () async => (await resolve()).debtors,
-      ),
+      debt: debt,
+      backups: backups,
     ),
   );
 }
