@@ -22,7 +22,8 @@ folders = ['lib', 'test', 'integration_test', 'tool', 'assets', 'docs',
            '.claude/skills/odevio',
            'explainations', 'android', 'ios', 'linux', 'macos', 'windows', 'web']
 files = ['pubspec.yaml', 'pubspec.lock', 'analysis_options.yaml', 'README.md',
-         'IMPLEMENTATION_STATUS.md', '.metadata', '.gitignore', '.odevioignore']
+         'IMPLEMENTATION_STATUS.md', '.metadata', '.gitignore', '.odevioignore',
+         'codemagic.yaml']
 excluded = {'.gradle', '.dart_tool', 'build', '.cxx', '.symlinks', 'ephemeral',
             'Pods', 'DerivedData', '__pycache__'}
 generated = {'local.properties', 'Generated.xcconfig', 'flutter_export_environment.sh',

@@ -1,6 +1,6 @@
 # iPhone builds through Odevio
 
-This project uses Odevio for remote iOS builds. Do not run local Xcode or fastlane commands. The requested deliverable is a signed `.ipa` for the owner's registered iPhone, not an App Store submission. Building through Odevio uploads the application source to its remote Mac; the installed mobile app still works offline.
+The owner initially selected Odevio, then switched the current build troubleshooting to **Codemagic**. Follow [CODEMAGIC.md](CODEMAGIC.md) for the checked-in CI workflows and current compile-error fix. This document retains the alternative Odevio setup; neither service has produced a verified signed IPA yet. No local Xcode/fastlane command is required on the Windows workstation. The requested signed deliverable is for the owner's registered iPhone, not an App Store submission. Building through Odevio uploads source to its remote Mac; the installed mobile app still works offline.
 
 ## Current state — 2026-10-06
 

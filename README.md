@@ -34,7 +34,7 @@ flutter run -d <android-or-ios-device-id>
 flutter build apk --debug
 ```
 
-For iOS, use **Odevio** and the installed [Odevio skill](.claude/skills/odevio/SKILL.md); no local Mac/Xcode or fastlane workflow is required. See [iPhone build setup and current blockers](docs/IOS_ODEVIO.md). The requested signed IPA is pending Odevio sign-in, paid Apple Developer membership and the owner's signing/device setup. No iOS build or installation has yet been verified. Android SDK/licensing is available here. Use Java 21 with this Gradle 8.14 project; the host's unrelated Java 26 is incompatible. Existing example IDs and debug signing are for development; publishing is not configured.
+For cloud builds, use the checked-in **Codemagic** workflows and [setup/troubleshooting guide](docs/CODEMAGIC.md). Android produces an installable debug APK; unsigned iOS-device and simulator builds are explicitly separate and do not produce a signed IPA. Flutter 3.41.5 and Java 21 are pinned to the verified baseline. The theme also imports the Cupertino library for the transition builder moved in newer Flutter releases. No iOS build or installation has yet been verified; the owner's Apple signing/device setup remains pending. The earlier [Odevio setup](docs/IOS_ODEVIO.md) is still available as an alternative. Existing example IDs and debug signing are for development; publishing is not configured.
 
 ## Architecture and scope
 

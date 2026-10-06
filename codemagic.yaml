@@ -1,0 +1,77 @@
+# Select a workflow explicitly. None publishes to an app store.
+# Keep CI on the SDK used by the committed lockfile and local verification.
+definitions:
+  scripts:
+    - &prepare
+      name: Resolve dependencies and check Dart code
+      script: |
+        set -euo pipefail
+        mkdir -p build/ci-logs
+        flutter --version | tee build/ci-logs/flutter-version.log
+        flutter pub get --enforce-lockfile 2>&1 | tee build/ci-logs/dependencies.log
+        flutter analyze 2>&1 | tee build/ci-logs/analysis.log
+
+workflows:
+  android-debug:
+    name: Android - installable debug APK
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: 3.41.5
+      java: 21
+    scripts:
+      - *prepare
+      - name: Build Android APK
+        script: |
+          set -euo pipefail
+          java -version 2>&1 | tee build/ci-logs/java-version.log
+          flutter build apk --debug --target=lib/main.dart --verbose 2>&1 | tee build/ci-logs/android-build.log
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+      - build/ci-logs/*.log
+
+  ios-unsigned:
+    name: iOS - unsigned device build (not installable)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: 3.41.5
+      xcode: '26.2'
+      cocoapods: default
+    scripts:
+      - *prepare
+      - name: Compile iOS without signing
+        script: |
+          set -euo pipefail
+          flutter build ios --release --no-codesign --target=lib/main.dart --verbose 2>&1 | tee build/ci-logs/ios-build.log
+      - name: Package unsigned app for inspection
+        script: |
+          set -euo pipefail
+          ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app build/ios/pharmacy-unsigned-device.app.zip
+    artifacts:
+      - build/ios/pharmacy-unsigned-device.app.zip
+      - build/ci-logs/*.log
+      - /tmp/xcodebuild_logs/*.log
+
+  ios-simulator:
+    name: iOS - simulator app (no Apple membership)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: 3.41.5
+      xcode: '26.2'
+      cocoapods: default
+    scripts:
+      - *prepare
+      - name: Build iOS simulator app
+        script: |
+          set -euo pipefail
+          flutter build ios --simulator --debug --target=lib/main.dart --verbose 2>&1 | tee build/ci-logs/ios-simulator-build.log
+      - name: Package simulator app
+        script: |
+          set -euo pipefail
+          ditto -c -k --sequesterRsrc --keepParent build/ios/iphonesimulator/Runner.app build/ios/pharmacy-simulator.app.zip
+    artifacts:
+      - build/ios/pharmacy-simulator.app.zip
+      - build/ci-logs/*.log
+      - /tmp/xcodebuild_logs/*.log

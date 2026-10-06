@@ -1,3 +1,7 @@
+// Flutter 3.44+ exports CupertinoPageTransitionsBuilder from Cupertino.
+// Keep both imports for compatibility with the verified Flutter 3.41 baseline.
+// ignore: unnecessary_import
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 abstract final class AppColors {
