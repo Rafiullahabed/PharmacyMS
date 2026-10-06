@@ -6,6 +6,8 @@ Version **0.8.0+8** includes inventory, calendar-aware alerts, manual daily reco
 
 Settings > Appearance offers Small, Medium (default), and Large (the previous text size). Your choice is stored on this device and included in backups; system accessibility scaling still applies. Cards use soft shadows, consistent rounded surfaces and spacing, with compact button padding and 48px touch targets.
 
+Android and iOS use a custom pharmacy launcher icon: a mortar, pestle and medical cross on teal. Android also provides adaptive and monochrome themed icons. See [icon sources and regeneration](assets/branding/README.md).
+
 Start in Inventory > Add item. Choose or add a counting unit and optionally enter initial stock. From item detail, use Add new batch for a delivery, or Add/Remove stock for an existing batch. When several batches are eligible, choose one explicitly. Settings > Manage units handles rename, deactivate/reactivate and deletion of unused units.
 
 Inventory list cards now have **− / +** shortcuts for exactly one unit. A single eligible batch updates immediately; multiple batches open an explicit chooser. Undo is available after saving. An item with no batch opens the new-batch form for its first delivery. Item detail retains the full quantity-entry forms. **Delete item** is available there for unused, empty items and requires confirmation. Stock history prevents permanent deletion; empty used items can be archived instead.
@@ -32,7 +34,7 @@ flutter run -d <android-or-ios-device-id>
 flutter build apk --debug
 ```
 
-For iOS, use macOS with Xcode and its command-line tools configured, then `flutter build ios --simulator --debug` and the integration command above on an iOS simulator. Configure a development team and unique bundle identifier for a physical iPhone. Exact setup and pending checks are in the [final audit](docs/FINAL_VERIFICATION.md#reproduction-and-remaining-platform-acceptance). These Apple toolchain steps cannot be verified on this Windows host. Android SDK/licensing is available here. Use Java 21 with this Gradle 8.14 project; the host's unrelated Java 26 is incompatible. Existing example bundle IDs and debug signing are for development; publishing is not configured.
+For iOS, use **Odevio** and the installed [Odevio skill](.claude/skills/odevio/SKILL.md); no local Mac/Xcode or fastlane workflow is required. See [iPhone build setup and current blockers](docs/IOS_ODEVIO.md). The requested signed IPA is pending Odevio sign-in, paid Apple Developer membership and the owner's signing/device setup. No iOS build or installation has yet been verified. Android SDK/licensing is available here. Use Java 21 with this Gradle 8.14 project; the host's unrelated Java 26 is incompatible. Existing example IDs and debug signing are for development; publishing is not configured.
 
 ## Architecture and scope
 
@@ -48,7 +50,7 @@ The database is versioned and protected by foreign keys, checks, indexes and tra
 
 ## Status
 
-All **174 tests pass**; formatting and static analysis are clean, and the Android debug APK builds for ARM64/x86_64. The Phase 7 review covers 22 screen entries at normal and 200% text, plus keyboard, chart, mixed-language and recovery cases. Actual Android 16 emulator review exercised native restore, numeric keyboard, stock adjustment/Undo, Back behavior and enlarged-text layouts. The subsequent appearance, one-unit shortcut and deletion changes were checked with host screenshots and real SQLite tests; they have not been rerun on a native device. iOS, physical devices, spoken screen readers and native Persian IME acceptance remain pending.
+All **175 host tests and 2 Android native integration tests passed**; formatting and static analysis are clean, and the 0.8.0+8 Android debug APK builds for ARM64/x86_64. The latest native integration ran in airplane mode with real SQLite, cross-module workflows, corrections, rollback, restore and reopening. The normal application also reached its empty Home screen offline and saved a product, a new unit and a dated batch using the Android keyboard. The retained Phase 7 review covers 22 screen entries at normal and 200% text, with earlier native file/stock/Back checks documented separately. iOS, physical devices, spoken screen readers and native Persian IME acceptance remain pending; no iOS or signed release artifact is claimed.
 
 `flutter test test/ui_refinement_test.dart --dart-define=PHASE7_SCREENSHOTS=true` produces the development-only gallery in `build/phase7-review/`. See [UI/UX review and reproduction](docs/UI_UX_REVIEW.md) for reviewed screens, fixture isolation, native/host distinctions and known editing limits. No fixture data ships with the app.
 

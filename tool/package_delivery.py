@@ -19,9 +19,10 @@ apk = delivery / f'pharmacy-companion-{version}-debug.apk'
 shutil.copy2(apk_source, apk)
 
 folders = ['lib', 'test', 'integration_test', 'tool', 'assets', 'docs',
+           '.claude/skills/odevio',
            'explainations', 'android', 'ios', 'linux', 'macos', 'windows', 'web']
 files = ['pubspec.yaml', 'pubspec.lock', 'analysis_options.yaml', 'README.md',
-         'IMPLEMENTATION_STATUS.md', '.metadata', '.gitignore']
+         'IMPLEMENTATION_STATUS.md', '.metadata', '.gitignore', '.odevioignore']
 excluded = {'.gradle', '.dart_tool', 'build', '.cxx', '.symlinks', 'ephemeral',
             'Pods', 'DerivedData', '__pycache__'}
 generated = {'local.properties', 'Generated.xcconfig', 'flutter_export_environment.sh',
@@ -31,7 +32,8 @@ for folder in folders:
     paths.extend(path for path in (root / folder).rglob('*') if path.is_file()
                  and not (excluded & set(path.relative_to(root).parts))
                  and path.name not in generated
-                 and path.suffix.lower() not in {'.jks', '.keystore', '.pyc'})
+                 and path.suffix.lower() not in {
+                     '.jks', '.keystore', '.pyc', '.p8', '.p12', '.mobileprovision'})
 with zipfile.ZipFile(source, 'w', zipfile.ZIP_DEFLATED) as archive:
     for path in sorted(set(paths)):
         if path.is_file():
@@ -39,8 +41,9 @@ with zipfile.ZipFile(source, 'w', zipfile.ZIP_DEFLATED) as archive:
     count = len(archive.namelist())
 
 def info(path):
-    return {'filename': path.name, 'bytes': path.stat().st_size,
-            'sha256': hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()}
+    with path.open('rb') as content:
+        digest = hashlib.file_digest(content, 'sha256').hexdigest()
+    return {'filename': path.name, 'bytes': path.stat().st_size, 'sha256': digest}
 
 manifest = {'app_version': version, 'database_schema': 5, 'backup_format': 1,
             'build_type': 'debug; development key, not a signed release',

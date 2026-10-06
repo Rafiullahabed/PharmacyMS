@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12 12 84 84">
+  <title>Pharmacy Companion: mortar and pestle with medical cross</title>
+  <defs><linearGradient id="teal" x2="1" y2="1"><stop stop-color="#119789"/><stop offset="1" stop-color="#046365"/></linearGradient></defs>
+  <path fill="url(#teal)" d="M12 12H96V96H12Z"/>
+  <path fill="#BDEDD9" fill-rule="evenodd" d="M 48 44 L 65 27 C 68 24 72 24 75 27 C 78 30 78 34 75 37 L 68 44 Z"/>
+  <path fill="#FFFFFF" fill-rule="evenodd" d="M 28 46 L 80 46 C 84 46 84 52 80 52 L 28 52 C 24 52 24 46 28 46 Z"/>
+  <path fill="#FFFFFF" fill-rule="evenodd" d="M 29 55 L 79 55 C 77 69 68 77 54 77 C 40 77 31 69 29 55 Z M 51 58 L 57 58 L 57 62 L 61 62 L 61 68 L 57 68 L 57 72 L 51 72 L 51 68 L 47 68 L 47 62 L 51 62 Z"/>
+  <path fill="#FFFFFF" fill-rule="evenodd" d="M 44 79 L 64 79 C 66 79 67 81 67 83 L 41 83 C 41 81 42 79 44 79 Z"/>
+</svg>

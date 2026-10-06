@@ -33,6 +33,14 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Odevio upload/download artifacts and local Apple signing credentials
+/.app.zip
+/source.zip
+/odevio.patch
+*.p8
+*.p12
+*.mobileprovision
+
 # Symbolication related
 app.*.symbols
 
