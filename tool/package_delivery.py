@@ -1,9 +1,14 @@
-"""Package mobile Flutter source and an already verified debug APK; no build/publish."""
+"""Package mobile Flutter source and an already verified APK; no build/publish."""
 from pathlib import Path
+import argparse
 import hashlib
 import json
 import zipfile
 import shutil
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--build-mode', choices=['release', 'debug'], default='release')
+args = parser.parse_args()
 
 root = Path(__file__).resolve().parents[1]
 version_line = next(line for line in (root / 'pubspec.yaml').read_text().splitlines()
@@ -12,10 +17,10 @@ version = version_line.split(':', 1)[1].strip()
 delivery = root / 'build' / 'delivery'
 delivery.mkdir(parents=True, exist_ok=True)
 source = delivery / f'pharmacy-companion-{version}-source.zip'
-apk_source = root / 'build' / 'app' / 'outputs' / 'flutter-apk' / 'app-debug.apk'
+apk_source = root / 'build' / 'app' / 'outputs' / 'flutter-apk' / f'app-{args.build_mode}.apk'
 if not apk_source.is_file():
-    raise SystemExit('Build and verify the normal lib/main.dart debug APK first.')
-apk = delivery / f'pharmacy-companion-{version}-debug.apk'
+    raise SystemExit(f'Build and verify the normal lib/main.dart {args.build_mode} APK first.')
+apk = delivery / f'pharmacy-companion-{version}-{args.build_mode}.apk'
 shutil.copy2(apk_source, apk)
 
 folders = ['lib', 'test', 'integration_test', 'tool', 'assets', 'docs',
@@ -25,7 +30,7 @@ files = ['pubspec.yaml', 'pubspec.lock', 'analysis_options.yaml', 'README.md',
          'IMPLEMENTATION_STATUS.md', '.metadata', '.gitignore', '.odevioignore',
          'codemagic.yaml']
 excluded = {'.gradle', '.dart_tool', 'build', '.cxx', '.symlinks', 'ephemeral',
-            'Pods', 'DerivedData', '__pycache__'}
+            'Pods', 'DerivedData', '__pycache__', '.signing'}
 generated = {'local.properties', 'Generated.xcconfig', 'flutter_export_environment.sh',
              'GeneratedPluginRegistrant.java', 'key.properties'}
 paths = [root / file for file in files]
@@ -47,7 +52,7 @@ def info(path):
     return {'filename': path.name, 'bytes': path.stat().st_size, 'sha256': digest}
 
 manifest = {'app_version': version, 'database_schema': 5, 'backup_format': 1,
-            'build_type': 'debug; development key, not a signed release',
+            'build_type': args.build_mode,
             'source_files': count, 'artifacts': [info(source), info(apk)]}
 (delivery / 'SHA256.json').write_text(json.dumps(manifest, indent=2) + '\n')
 print(json.dumps(manifest, indent=2))

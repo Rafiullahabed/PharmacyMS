@@ -31,10 +31,12 @@ flutter analyze
 flutter test
 flutter test integration_test/native_app_test.dart -d <android-or-ios-device-id>
 flutter run -d <android-or-ios-device-id>
-flutter build apk --debug
+flutter build apk --release
 ```
 
-For cloud builds, use the checked-in **Codemagic** workflows and [setup/troubleshooting guide](docs/CODEMAGIC.md). Android produces an installable debug APK; unsigned iOS-device and simulator builds are explicitly separate and do not produce a signed IPA. Flutter 3.41.5 and Java 21 are pinned to the verified baseline. The theme also imports the Cupertino library for the transition builder moved in newer Flutter releases. No iOS build or installation has yet been verified; the owner's Apple signing/device setup remains pending. The earlier [Odevio setup](docs/IOS_ODEVIO.md) is still available as an alternative. Existing example IDs and debug signing are for development; publishing is not configured.
+Configure the private key as described in [Android release setup](docs/ANDROID_RELEASE.md) before building a release on a new workstation. The owner-authorized first release key and local signing properties already exist on the original workstation and are excluded from Git and source packages. Keep a secure copy of the key and credentials for future updates.
+
+For cloud builds, use the checked-in **Codemagic** workflows and [setup/troubleshooting guide](docs/CODEMAGIC.md). Android now produces an optimized, signed release APK after the one-time `pharmacy_release` keystore upload. Unsigned iOS-device and simulator builds are explicitly separate and do not produce a signed IPA. Flutter 3.41.5 and Java 21 are pinned to the verified baseline. The theme also imports the Cupertino library for the transition builder moved in newer Flutter releases. No iOS build or installation has yet been verified; the owner's Apple signing/device setup remains pending. The earlier [Odevio setup](docs/IOS_ODEVIO.md) is still available as an alternative. Example application IDs remain; store publishing is not configured.
 
 ## Architecture and scope
 
@@ -50,12 +52,14 @@ The database is versioned and protected by foreign keys, checks, indexes and tra
 
 ## Status
 
-All **175 host tests and 2 Android native integration tests passed**; formatting and static analysis are clean, and the 0.8.0+8 Android debug APK builds for ARM64/x86_64. The latest native integration ran in airplane mode with real SQLite, cross-module workflows, corrections, rollback, restore and reopening. The normal application also reached its empty Home screen offline and saved a product, a new unit and a dated batch using the Android keyboard. The retained Phase 7 review covers 22 screen entries at normal and 200% text, with earlier native file/stock/Back checks documented separately. iOS, physical devices, spoken screen readers and native Persian IME acceptance remain pending; no iOS or signed release artifact is claimed.
+The retained Phase 8 checks passed **175 host tests and 2 Android native integration tests**, formatting and static analysis. The native integration ran in airplane mode with real SQLite, cross-module workflows, corrections, rollback, restore and reopening. The normal application also reached its empty Home screen offline and saved a product, a new unit and a dated batch using the Android keyboard. The retained Phase 7 review covers 22 screen entries at normal and 200% text, with earlier native file/stock/Back checks documented separately.
+
+The Android signing follow-up built version **0.8.0+8 as a signed release APK** for ARM/ARM64/x86_64. Android SDK signature verification passed, the certificate matches the retained release key, and the packaged app is not debuggable. This configuration-only follow-up did not repeat the Dart suites or run the release on a device. Codemagic execution, iOS, physical devices, spoken screen readers and native Persian IME acceptance remain pending. The APK is `build/app/outputs/flutter-apk/app-release.apk`; delivery copies and hashes are under `build/delivery/`.
 
 `flutter test test/ui_refinement_test.dart --dart-define=PHASE7_SCREENSHOTS=true` produces the development-only gallery in `build/phase7-review/`. See [UI/UX review and reproduction](docs/UI_UX_REVIEW.md) for reviewed screens, fixture isolation, native/host distinctions and known editing limits. No fixture data ships with the app.
 
 See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for exact specification coverage, verification results and limitations, and [dependencies](docs/DEPENDENCIES.md) for locked versions/licenses. Both original specifications in `explainations/` remain the source of truth.
 
-The representative larger-data test is `flutter test test/large_dataset_test.dart`; timings are written to `build/phase8-performance.json`. It verifies 5,000 products, 20,000 batches and 50,000 history/ledger entries plus five years of daily records, including full backup restoration. Use `python tool/package_delivery.py` only after verifying the normal `lib/main.dart` debug build; it packages source and APK with SHA-256 hashes under `build/delivery/` and excludes build caches, local paths and signing keys.
+The representative larger-data test is `flutter test test/large_dataset_test.dart`; timings are written to `build/phase8-performance.json`. It verifies 5,000 products, 20,000 batches and 50,000 history/ledger entries plus five years of daily records, including full backup restoration. Use `python tool/package_delivery.py` only after verifying the normal `lib/main.dart` release build; it packages source and APK with SHA-256 hashes under `build/delivery/` and excludes build caches, local paths and signing keys.
 
 Assumptions: one user/device, AFN with two decimal places, integer stock in one unit per product, local Gregorian financial/debt business dates, no future actual entries, signed manual profit, no customer credit, zero physical stock/debt before archive, and replacement-only restoration. Batch calendar/precision remains authoritative. No synchronization or additional product module is introduced. Remaining iOS/physical-device and native accessibility acceptance is explicitly documented.

@@ -2,6 +2,7 @@
 .agents/
 .codex/
 .aws/
+.signing/
 .idea/
 .vscode/
 android/

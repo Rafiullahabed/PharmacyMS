@@ -1,0 +1,57 @@
+name: iPhone IPA for personal signing
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/ios-ipa-*']
+
+permissions:
+  contents: read
+
+jobs:
+  ios-ipa:
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install the verified Flutter version
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch 3.41.5 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/flutter/bin/flutter" --version
+      - name: Resolve locked packages and analyze
+        run: |
+          set -euo pipefail
+          mkdir -p build/ci-logs
+          flutter pub get --enforce-lockfile 2>&1 | tee build/ci-logs/dependencies.log
+          flutter analyze 2>&1 | tee build/ci-logs/analysis.log
+          python3 -m unittest discover -s tool -p 'test_package_ios_ipa.py' -v
+      - name: Build the iPhone app without signing
+        run: |
+          set -euo pipefail
+          flutter build ios --release --no-codesign --target=lib/main.dart --verbose 2>&1 | tee build/ci-logs/ios-build.log
+      - name: Package IPA for personal signing
+        run: python3 tool/package_ios_ipa.py
+      - name: Save IPA and checksum metadata
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pharmacy-companion-unsigned-ipa
+          path: build/ios/ipa/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Save build logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ios-build-logs
+          path: build/ci-logs/
+          if-no-files-found: ignore
+          retention-days: 14

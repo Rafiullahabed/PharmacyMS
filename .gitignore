@@ -41,6 +41,12 @@ migrate_working_dir/
 *.p12
 *.mobileprovision
 
+# Private Android release signing identity and credentials
+/.signing/
+**/key.properties
+*.jks
+*.keystore
+
 # Symbolication related
 app.*.symbols
 

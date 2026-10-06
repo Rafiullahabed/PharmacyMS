@@ -14,7 +14,7 @@ The supplied iOS excerpt does not contain the underlying Xcode/Dart error. Flutt
 
 1. Commit/push the changed theme and `codemagic.yaml` to the repository and branch connected to Codemagic. The YAML file must be at the repository root. Existing UI-configured jobs do not automatically become this workflow just because the file exists locally.
 2. In Codemagic, select **Start new build**, choose that branch and a workflow from the YAML configuration. If currently using the Flutter workflow editor, switch to the repository's YAML configuration. See [Codemagic's YAML instructions](https://docs.codemagic.io/yaml-basic-configuration/yaml-getting-started/).
-3. Run **Android - installable debug APK** first to verify the fixed Dart compilation. It produces `build/app/outputs/flutter-apk/app-debug.apk`. This is a development APK, not an AAB or a store release.
+3. Complete the one-time [Android release signing setup](ANDROID_RELEASE.md), then run **Android - signed release APK**. It produces `build/app/outputs/flutter-apk/app-release.apk`, optimized and signed with the app's permanent release key. Upload the existing local key under the exact Codemagic reference `pharmacy_release`; missing signing configuration fails explicitly. This workflow does not publish to a store.
 4. Run **iOS - unsigned device build (not installable)** to check device compilation without Apple signing. It produces `pharmacy-unsigned-device.app.zip` only after compilation succeeds. It does not produce an installable IPA.
 5. Alternatively run **iOS - simulator app (no Apple membership)** for `pharmacy-simulator.app.zip`. This runs in an iOS simulator, not on a physical iPhone.
 

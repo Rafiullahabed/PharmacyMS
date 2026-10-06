@@ -12,26 +12,36 @@ definitions:
         flutter analyze 2>&1 | tee build/ci-logs/analysis.log
 
 workflows:
-  android-debug:
-    name: Android - installable debug APK
+  android-release:
+    name: Android - signed release APK
     instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
       flutter: 3.41.5
       java: 21
+      android_signing:
+        - pharmacy_release
     scripts:
+      - name: Check release signing identity
+        script: |
+          set -euo pipefail
+          : "${CM_KEYSTORE_PATH:?Upload the pharmacy_release keystore in Codemagic Code signing identities}"
+          : "${CM_KEYSTORE_PASSWORD:?Missing release keystore password}"
+          : "${CM_KEY_ALIAS:?Missing release key alias}"
+          : "${CM_KEY_PASSWORD:?Missing release key password}"
+          test -f "$CM_KEYSTORE_PATH"
       - *prepare
-      - name: Build Android APK
+      - name: Build signed Android release APK
         script: |
           set -euo pipefail
           java -version 2>&1 | tee build/ci-logs/java-version.log
-          flutter build apk --debug --target=lib/main.dart --verbose 2>&1 | tee build/ci-logs/android-build.log
+          flutter build apk --release --target=lib/main.dart --verbose 2>&1 | tee build/ci-logs/android-build.log
     artifacts:
-      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/flutter-apk/app-release.apk
       - build/ci-logs/*.log
 
   ios-unsigned:
-    name: iOS - unsigned device build (not installable)
+    name: iOS - IPA for personal signing
     instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
@@ -44,12 +54,14 @@ workflows:
         script: |
           set -euo pipefail
           flutter build ios --release --no-codesign --target=lib/main.dart --verbose 2>&1 | tee build/ci-logs/ios-build.log
-      - name: Package unsigned app for inspection
+      - name: Package IPA for personal signing
         script: |
           set -euo pipefail
-          ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app build/ios/pharmacy-unsigned-device.app.zip
+          python3 -m unittest discover -s tool -p 'test_package_ios_ipa.py' -v
+          python3 tool/package_ios_ipa.py
     artifacts:
-      - build/ios/pharmacy-unsigned-device.app.zip
+      - build/ios/ipa/*.ipa
+      - build/ios/ipa/*.json
       - build/ci-logs/*.log
       - /tmp/xcodebuild_logs/*.log
 
